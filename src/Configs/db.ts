@@ -1,20 +1,13 @@
-export const {
-    DB_PORT,
-    DB_HOST,
-    DB_USER,
-    DB_PASSWORD,
-    DB_NAME
-} = process.env; 
-
+import 'dotenv/config';
 import { Sequelize } from "sequelize";
 
 const db = new Sequelize(
-    DB_NAME || '',
-    DB_USER || '',
-    DB_PASSWORD || '',
+    process.env.NOMBRE_DB || '',
+    process.env.USUARIO_DB || '',
+    process.env.CONTRASENA_DB || '',
     {
-        host: DB_HOST,
-        port: Number(DB_PORT || 3306),
+        host: process.env.HOST_DB || 'localhost',
+        port: Number(process.env.DB_PORT || 3306),
         dialect: "mysql",
         logging: false
     }

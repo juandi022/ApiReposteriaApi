@@ -16,6 +16,7 @@ export class Producto extends Model<
     declare descripcion: string | null;
     declare precio: string;
     declare stock: number;
+    declare imagen: string | null;
     declare estado: CreationOptional<boolean>;
 }
 
@@ -42,6 +43,10 @@ Producto.init(
             type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 0
+        },
+        imagen: {
+            type: DataTypes.STRING(255),
+            allowNull: true
         },
         estado: {
             type: DataTypes.BOOLEAN,

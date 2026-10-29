@@ -1,13 +1,23 @@
 import 'dotenv/config';
 import { Sequelize } from "sequelize";
 
+// Mismas variables de entorno que usa el proyecto de compras/proveedores,
+// así se puede reutilizar el mismo archivo .env
+const {
+    DB_PORT,
+    DB_HOST,
+    DB_USER,
+    DB_PASSWORD,
+    DB_NAME
+} = process.env;
+
 const db = new Sequelize(
-    process.env.NOMBRE_DB || '',
-    process.env.USUARIO_DB || '',
-    process.env.CONTRASENA_DB || '',
+    DB_NAME || '',
+    DB_USER || '',
+    DB_PASSWORD || '',
     {
-        host: process.env.HOST_DB || 'localhost',
-        port: Number(process.env.DB_PORT || 3306),
+        host: DB_HOST || 'localhost',
+        port: Number(DB_PORT || 3306),
         dialect: "mysql",
         logging: false
     }

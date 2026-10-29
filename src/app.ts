@@ -8,6 +8,8 @@ import register from './Routes/Security/rutaRegistrar.js';
 import login from './Routes/Security/rutaLogin.js';
 import rutasProveedores from './Routes/Proveedor/rutasProveedores.js';
 import rutasCompras from './Routes/Compra/rutasCompras.js';
+import rutasCatalogo from './Routes/Catalogo/rutasCatalogo.js';
+import rutasCarrito from './Routes/Carrito/rutasCarrito.js';
 import rutasFuncionesRoles from './Routes/FuncionesRoles/rutasFuncionesRoles.js';
 import rutasRolesUsuarios from './Routes/RolesUsuarios/rutasRolesUsuarios.js';
 
@@ -24,5 +26,7 @@ app.use('/api/funciones-roles', rutasFuncionesRoles);
 app.use('/api/roles-usuarios', rutasRolesUsuarios);
 app.use('/api/security', register);
 app.use('/api/security', login);
+app.use('/api/catalogo', rutasCatalogo);
+app.use('/api/carrito', rutasCarrito);
 
 export default app;

@@ -5,6 +5,8 @@ import db from "../../Configs/db.js";
 import Compra, { EstadoCompra } from "../../Model/Compra.js";
 import DetalleCompra from "../../Model/DetalleCompra.js";
 import Proveedor, { EstadoProveedor } from "../../Model/Proveedor.js";
+import { enviarCorreo } from "../../Configs/correo.js";
+import { correoCompra } from "../../Services/correoCompra.js";
 
 
 const IMPUESTO = 0.15;
@@ -141,6 +143,7 @@ export const guardarCompra = async (req: Request, res: Response): Promise<Respon
 
     try {
         const proveedor = await Proveedor.findByPk(Number(id_proveedor));
+        
 
         if (!proveedor) {
             return res.status(404).json({ error: 'El proveedor indicado no existe' });
@@ -351,7 +354,7 @@ export const confirmarCompra = async (req: Request, res: Response): Promise<Resp
             for (const detalle of detalles) {
                 await db.query(
                     `UPDATE productos
-                     SET stock = stock + :cantidad, estado = 'Disponible'
+                     SET stock = stock + :cantidad, estado = 1
                      WHERE id_producto = :id_producto`,
                     {
                         replacements: { cantidad: detalle.cantidad, id_producto: detalle.id_producto },
@@ -367,7 +370,22 @@ export const confirmarCompra = async (req: Request, res: Response): Promise<Resp
             return compra;
         });
 
-        return res.json({ message: 'Compra confirmada e inventario actualizado', compra: compraConfirmada });
+        let correoEnviado = true;
+
+        try{
+            await correoCompra(Number(id));
+        }
+        catch(errorCorreo){
+            correoEnviado = false;
+            console.error('Compra confirmada pero falló el envío del correo', errorCorreo);
+        }
+
+        return res.json({ message: correoEnviado
+            ? 'Compra confirmada, inventario actualizado y correo enviado al proveedor'
+            : 'Compra confirmada e inventario actualizado, pero no se pudo enviar el correo',
+            correo_enviado: correoEnviado,
+            compra: compraConfirmada
+        });
     }
     catch (error) {
         return manejarError(res, error, 'Error al confirmar la compra');

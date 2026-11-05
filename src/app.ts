@@ -12,6 +12,8 @@ import rutasCatalogo from './Routes/Catalogo/rutasCatalogo.js';
 import rutasCarrito from './Routes/Carrito/rutasCarrito.js';
 import rutasFuncionesRoles from './Routes/FuncionesRoles/rutasFuncionesRoles.js';
 import rutasRolesUsuarios from './Routes/RolesUsuarios/rutasRolesUsuarios.js';
+import { setupSwagger } from './Configs/swagger.js';
+import { RUTA_IMAGENES } from './Configs/archivos.js';
 
 const app = express();
 app.use(express.json());
@@ -28,5 +30,11 @@ app.use('/api/security', register);
 app.use('/api/security', login);
 app.use('/api/catalogo', rutasCatalogo);
 app.use('/api/carrito', rutasCarrito);
+
+// Sirve las imágenes guardadas: http://localhost:3001/img/<archivo>
+app.use('/img', express.static(RUTA_IMAGENES));
+
+// Documentación Swagger: http://localhost:3001/api-docs
+setupSwagger(app);
 
 export default app;

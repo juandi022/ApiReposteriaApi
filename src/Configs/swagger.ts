@@ -19,7 +19,30 @@ const options: swaggerJsdoc.Options = {
             { url: `http://localhost:${process.env.PORT || 3001}` }
         ],
         components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT'
+                }
+            },
             schemas: {
+                Usuario: {
+                    type: 'object',
+                    properties: {
+                        usercod: { type: 'integer', example: 1 },
+                        useremail: { type: 'string', format: 'email', example: 'cliente@ejemplo.com' },
+                        username: { type: 'string', example: 'cliente' },
+                        userpswd: { type: 'string', description: 'Hash de la contraseña almacenado' },
+                        userfching: { type: 'string', format: 'date-time' },
+                        userpswdest: { type: 'string', example: 'ACT' },
+                        userpswdexp: { type: 'string', format: 'date' },
+                        userest: { type: 'string', example: 'ACT' },
+                        useractcod: { type: 'string', nullable: true },
+                        userpswdchg: { type: 'string', format: 'date' },
+                        usertipo: { type: 'string', enum: ['PLB', 'ADM', 'AUD'] }
+                    }
+                },
                 Producto: {
                     type: 'object',
                     properties: {

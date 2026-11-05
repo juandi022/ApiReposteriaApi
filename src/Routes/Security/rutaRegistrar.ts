@@ -7,7 +7,8 @@ const register = Router();
 register.post('/registrar',
     body('useremail')
         .isEmail().withMessage('El email no es válido')
-        .notEmpty().withMessage('El email es obligatorio'),
+        .notEmpty().withMessage('El email es obligatorio')
+        ,
     body('username')
         .notEmpty().withMessage('El nombre de usuario es obligatorio')
         .isLength({ min: 3, max: 80 }).withMessage('El nombre de usuario debe tener entre 3 y 80 caracteres'),

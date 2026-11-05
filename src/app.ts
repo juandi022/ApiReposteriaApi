@@ -4,14 +4,13 @@ import morgan from 'morgan';
 import rutasFunciones from "./Routes/Funcion/rutasFunciones.js";
 import rutasRoles from "./Routes/Rol/rutasRoles.js";
 import rutasUsuarios from './Routes/Usuario/rutasUsuarios.js';
-import register from './Routes/Security/rutaRegistrar.js';
-import login from './Routes/Security/rutaLogin.js';
 import rutasProveedores from './Routes/Proveedor/rutasProveedores.js';
 import rutasCompras from './Routes/Compra/rutasCompras.js';
 import rutasCatalogo from './Routes/Catalogo/rutasCatalogo.js';
 import rutasCarrito from './Routes/Carrito/rutasCarrito.js';
 import rutasFuncionesRoles from './Routes/FuncionesRoles/rutasFuncionesRoles.js';
 import rutasRolesUsuarios from './Routes/RolesUsuarios/rutasRolesUsuarios.js';
+import rutasAutenticacion from './Routes/Security/rutaAutenticacion.js';
 import { setupSwagger } from './Configs/swagger.js';
 import { RUTA_IMAGENES } from './Configs/archivos.js';
 
@@ -26,8 +25,7 @@ app.use('/api/proveedores', rutasProveedores);
 app.use('/api/compras', rutasCompras);
 app.use('/api/funciones-roles', rutasFuncionesRoles);
 app.use('/api/roles-usuarios', rutasRolesUsuarios);
-app.use('/api/security', register);
-app.use('/api/security', login);
+app.use('/api/security', rutasAutenticacion);
 app.use('/api/catalogo', rutasCatalogo);
 app.use('/api/carrito', rutasCarrito);
 

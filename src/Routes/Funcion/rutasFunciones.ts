@@ -11,10 +11,54 @@ import {
 
 const rutasFunciones = Router();
 
+/**
+ * @swagger
+ * /api/funciones:
+ *   get:
+ *     summary: Listar todas las funciones
+ *     tags: [Funciones]
+ *     responses:
+ *       200:
+ *         description: Lista de funciones obtenida correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Funcion'
+ *       500:
+ *         description: Error al listar las funciones
+ */
+
 
 // Listar todas las funciones
 rutasFunciones.get('/', listarFunciones);
 
+/**
+ * @swagger
+ * /api/funciones/funcion:
+ *   get:
+ *     summary: Obtener una función por su código
+ *     tags: [Funciones]
+ *     parameters:
+ *       - in: query
+ *         name: fncod
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código de la función
+ *     responses:
+ *       200:
+ *         description: Función encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Funcion'
+ *       400:
+ *         description: Código inválido o faltante
+ *       404:
+ *         description: No se encontró esa función
+ */
 
 // Obtener función por código
 rutasFunciones.get('/funcion',
@@ -26,6 +70,45 @@ rutasFunciones.get('/funcion',
     obtenerFuncionPorId
 );
 
+/**
+ * @swagger
+ * /api/funciones/guardar:
+ *   post:
+ *     summary: Registrar una nueva función
+ *     tags: [Funciones]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fncod
+ *               - fndsc
+ *               - fnest
+ *               - fntyp
+ *             properties:
+ *               fncod:
+ *                 type: string
+ *                 example: PRODUCTOS
+ *               fndsc:
+ *                 type: string
+ *                 example: Administración de productos
+ *               fnest:
+ *                 type: string
+ *                 enum: [ACT, INA]
+ *                 example: ACT
+ *               fntyp:
+ *                 type: string
+ *                 example: MNT
+ *     responses:
+ *       201:
+ *         description: Función creada correctamente
+ *       400:
+ *         description: Error de validación
+ *       500:
+ *         description: Error al crear la función
+ */
 
 // Guardar función
 rutasFunciones.post('/guardar',
@@ -58,6 +141,44 @@ rutasFunciones.post('/guardar',
     guardarFuncion
 );
 
+/**
+ * @swagger
+ * /api/funciones/actualizar:
+ *   put:
+ *     summary: Actualizar una función
+ *     tags: [Funciones]
+ *     parameters:
+ *       - in: query
+ *         name: fncod
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código de la función que se actualizará
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fndsc:
+ *                 type: string
+ *                 example: Administración actualizada
+ *               fnest:
+ *                 type: string
+ *                 enum: [ACT, INA]
+ *                 example: ACT
+ *               fntyp:
+ *                 type: string
+ *                 example: MNT
+ *     responses:
+ *       200:
+ *         description: Función actualizada correctamente
+ *       400:
+ *         description: Error de validación
+ *       404:
+ *         description: Función no encontrada
+ */
 
 // Actualizar función
 rutasFunciones.put('/actualizar',
@@ -87,6 +208,27 @@ rutasFunciones.put('/actualizar',
     actualizarFuncion
 );
 
+/**
+ * @swagger
+ * /api/funciones/eliminar:
+ *   delete:
+ *     summary: Eliminar una función
+ *     tags: [Funciones]
+ *     parameters:
+ *       - in: query
+ *         name: fncod
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código de la función
+ *     responses:
+ *       200:
+ *         description: Función eliminada correctamente
+ *       400:
+ *         description: Código inválido o faltante
+ *       404:
+ *         description: Función no encontrada
+ */
 
 // Eliminar función
 rutasFunciones.delete('/eliminar',
@@ -98,6 +240,4 @@ rutasFunciones.delete('/eliminar',
 
     eliminarFuncion
 );
-
-
 export default rutasFunciones;

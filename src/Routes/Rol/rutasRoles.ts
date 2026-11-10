@@ -11,8 +11,53 @@ import {
 
 const rutasRoles = Router();
 
+/**
+ * @swagger
+ * /api/roles:
+ *   get:
+ *     summary: Listar todos los roles
+ *     tags: [Roles]
+ *     responses:
+ *       200:
+ *         description: Lista de roles obtenida correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Rol'
+ *       500:
+ *         description: Error al listar los roles
+ */
+
 // Listar roles
 rutasRoles.get('/', listarRoles);
+
+/**
+ * @swagger
+ * /api/roles/rol:
+ *   get:
+ *     summary: Obtener un rol por su código
+ *     tags: [Roles]
+ *     parameters:
+ *       - in: query
+ *         name: rolescod
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código del rol
+ *     responses:
+ *       200:
+ *         description: Rol encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Rol'
+ *       400:
+ *         description: Código inválido o faltante
+ *       404:
+ *         description: No se encontró ese rol
+ */
 
 // Obtener rol por código
 rutasRoles.get('/rol',
@@ -23,6 +68,42 @@ rutasRoles.get('/rol',
         .withMessage('El código del rol debe tener máximo 15 caracteres'),
     obtenerRolPorId
 );
+
+/**
+ * @swagger
+ * /api/roles/guardar:
+ *   post:
+ *     summary: Registrar un nuevo rol
+ *     tags: [Roles]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - rolescod
+ *               - rolesdsc
+ *               - rolesest
+ *             properties:
+ *               rolescod:
+ *                 type: string
+ *                 example: ADMIN
+ *               rolesdsc:
+ *                 type: string
+ *                 example: Administrador del sistema
+ *               rolesest:
+ *                 type: string
+ *                 enum: [ACT, INA]
+ *                 example: ACT
+ *     responses:
+ *       201:
+ *         description: Rol creado correctamente
+ *       400:
+ *         description: Error de validación
+ *       500:
+ *         description: Error al crear el rol
+ */
 
 // Guardar rol
 rutasRoles.post('/guardar',
@@ -49,6 +130,42 @@ rutasRoles.post('/guardar',
     guardarRol
 );
 
+/**
+ * @swagger
+ * /api/roles/actualizar:
+ *   put:
+ *     summary: Actualizar un rol
+ *     tags: [Roles]
+ *     parameters:
+ *       - in: query
+ *         name: rolescod
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código del rol que se actualizará
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               rolesdsc:
+ *                 type: string
+ *                 example: Administrador actualizado
+ *               rolesest:
+ *                 type: string
+ *                 enum: [ACT, INA]
+ *                 example: ACT
+ *     responses:
+ *       200:
+ *         description: Rol actualizado correctamente
+ *       400:
+ *         description: Error de validación
+ *       404:
+ *         description: Rol no encontrado
+ */
+
 // Actualizar rol
 rutasRoles.put('/actualizar',
     query('rolescod')
@@ -71,6 +188,28 @@ rutasRoles.put('/actualizar',
 
     actualizarRol
 );
+
+/**
+ * @swagger
+ * /api/roles/eliminar:
+ *   delete:
+ *     summary: Eliminar un rol
+ *     tags: [Roles]
+ *     parameters:
+ *       - in: query
+ *         name: rolescod
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código del rol
+ *     responses:
+ *       200:
+ *         description: Rol eliminado correctamente
+ *       400:
+ *         description: Código inválido o faltante
+ *       404:
+ *         description: No se encontró ese rol
+ */
 
 // Eliminar rol
 rutasRoles.delete('/eliminar',

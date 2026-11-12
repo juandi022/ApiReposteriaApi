@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import * as controladorAutenticacion from '../../Controllers/Security/autenticacion.js';
+import * as controladorAutenticacion from '../../Controllers/Security/Autenticacion.js';
 import { validarAutenticacion } from '../../Configs/passport.js';
 
 const router = Router();

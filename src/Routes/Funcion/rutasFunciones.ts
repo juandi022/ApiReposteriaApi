@@ -11,12 +11,87 @@ import {
 
 const rutasFunciones = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Funciones
+ *   description: Administración de funciones del sistema
+ */
 
-// Listar todas las funciones
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Funcion:
+ *       type: object
+ *       properties:
+ *         fncod:
+ *           type: string
+ *           maxLength: 255
+ *           example: usuarios.listar
+ *         fndsc:
+ *           type: string
+ *           maxLength: 45
+ *           example: Listar usuarios
+ *         fnest:
+ *           type: string
+ *           enum: [ACT, INA]
+ *           example: ACT
+ *         fntyp:
+ *           type: string
+ *           maxLength: 3
+ *           example: MEN
+ */
+
+/**
+ * @swagger
+ * /api/funciones:
+ *   get:
+ *     summary: Listar funciones
+ *     tags: [Funciones]
+ *     responses:
+ *       200:
+ *         description: Lista de funciones
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Funcion'
+ *       500:
+ *         description: Error al listar las funciones
+ */
 rutasFunciones.get('/', listarFunciones);
 
-
-// Obtener función por código
+/**
+ * @swagger
+ * /api/funciones/funcion:
+ *   get:
+ *     summary: Obtener una función por código
+ *     tags: [Funciones]
+ *     parameters:
+ *       - in: query
+ *         name: fncod
+ *         required: true
+ *         description: Código de la función
+ *         schema:
+ *           type: string
+ *           maxLength: 255
+ *           example: usuarios.listar
+ *     responses:
+ *       200:
+ *         description: Función encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Funcion'
+ *       400:
+ *         description: Código ausente o inválido
+ *       404:
+ *         description: No se encontró esa función
+ *       500:
+ *         description: Error al obtener la función
+ */
 rutasFunciones.get('/funcion',
     query('fncod')
         .notEmpty()
@@ -26,8 +101,48 @@ rutasFunciones.get('/funcion',
     obtenerFuncionPorId
 );
 
-
-// Guardar función
+/**
+ * @swagger
+ * /api/funciones/guardar:
+ *   post:
+ *     summary: Crear una función
+ *     tags: [Funciones]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [fncod, fndsc, fnest, fntyp]
+ *             properties:
+ *               fncod:
+ *                 type: string
+ *                 maxLength: 255
+ *                 example: usuarios.listar
+ *               fndsc:
+ *                 type: string
+ *                 maxLength: 45
+ *                 example: Listar usuarios
+ *               fnest:
+ *                 type: string
+ *                 enum: [ACT, INA]
+ *                 example: ACT
+ *               fntyp:
+ *                 type: string
+ *                 maxLength: 3
+ *                 example: MEN
+ *     responses:
+ *       201:
+ *         description: Función creada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Funcion'
+ *       400:
+ *         description: Datos inválidos
+ *       500:
+ *         description: Error al crear la función
+ */
 rutasFunciones.post('/guardar',
     body('fncod')
         .notEmpty()
@@ -58,8 +173,54 @@ rutasFunciones.post('/guardar',
     guardarFuncion
 );
 
-
-// Actualizar función
+/**
+ * @swagger
+ * /api/funciones/actualizar:
+ *   put:
+ *     summary: Actualizar una función
+ *     description: Actualiza la descripción, el estado y/o el tipo de la función indicada.
+ *     tags: [Funciones]
+ *     parameters:
+ *       - in: query
+ *         name: fncod
+ *         required: true
+ *         description: Código de la función
+ *         schema:
+ *           type: string
+ *           maxLength: 255
+ *           example: usuarios.listar
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fndsc:
+ *                 type: string
+ *                 maxLength: 45
+ *                 example: Listar usuarios del sistema
+ *               fnest:
+ *                 type: string
+ *                 enum: [ACT, INA]
+ *                 example: ACT
+ *               fntyp:
+ *                 type: string
+ *                 maxLength: 3
+ *                 example: MEN
+ *     responses:
+ *       200:
+ *         description: Función actualizada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Funcion'
+ *       400:
+ *         description: Datos inválidos
+ *       404:
+ *         description: Función no encontrada
+ *       500:
+ *         description: Error al actualizar la función
+ */
 rutasFunciones.put('/actualizar',
     query('fncod')
         .notEmpty()
@@ -87,8 +248,31 @@ rutasFunciones.put('/actualizar',
     actualizarFuncion
 );
 
-
-// Eliminar función
+/**
+ * @swagger
+ * /api/funciones/eliminar:
+ *   delete:
+ *     summary: Eliminar una función
+ *     tags: [Funciones]
+ *     parameters:
+ *       - in: query
+ *         name: fncod
+ *         required: true
+ *         description: Código de la función
+ *         schema:
+ *           type: string
+ *           maxLength: 255
+ *           example: usuarios.listar
+ *     responses:
+ *       200:
+ *         description: Función eliminada correctamente
+ *       400:
+ *         description: Código ausente o inválido
+ *       404:
+ *         description: No se encontró esa función
+ *       500:
+ *         description: Error al eliminar la función
+ */
 rutasFunciones.delete('/eliminar',
     query('fncod')
         .notEmpty()
@@ -98,6 +282,5 @@ rutasFunciones.delete('/eliminar',
 
     eliminarFuncion
 );
-
 
 export default rutasFunciones;

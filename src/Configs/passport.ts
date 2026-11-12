@@ -57,6 +57,10 @@ declare global {
       rol?: string;
       userest?: string;
     }
+
+    interface Request {
+      user?: User;
+    }
   }
 }
 
@@ -193,6 +197,32 @@ export const validarAutenticacion = (req: Request, res: Response, next: NextFunc
     req.user = usuario;
     next();
   })(req, res, next);
+};
+
+/**
+ * Igual que `validarAutenticacion`, pero no rechaza la petición si no hay token
+ * o si el token es inválido. Simplemente deja `req.user` sin definir.
+ */
+export const validarAutenticacionOpcional = (req: Request, _res: Response, next: NextFunction): void => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    next();
+    return;
+  }
+
+  passport.authenticate('jwt', { session: false }, (err: any, usuario: Express.User | false) => {
+    if (err) {
+      console.error('Error en autenticación opcional:', err);
+      next();
+      return;
+    }
+
+    if (usuario) {
+      req.user = usuario;
+    }
+
+    next();
+  })(req, _res, next);
 };
 
 /**

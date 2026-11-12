@@ -4,6 +4,8 @@ import db from './Configs/db.js';
 import "./Model/Producto.js";
 import "./Model/Carrito.js";
 import "./Model/DetalleCarrito.js";
+import "./Model/IntentoLogin.js";
+import "./Model/PinRecuperacion.js";
 
 const PORT = process.env.PORT || 3001;
 

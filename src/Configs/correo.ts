@@ -19,12 +19,13 @@ const transporter = nodemailer.createTransport({
  * @param destinatario Dirección de correo del receptor
  * @param asunto Asunto del correo
  * @param mensaje Contenido del mensaje en texto plano
+ * @returns `true` si el correo se envió correctamente, `false` en caso contrario
  */
 export const enviarCorreo = async (
   destinatario: string,
   asunto: string,
   mensaje: string
-): Promise<void> => {
+): Promise<boolean> => {
   try {
     const mailOptions = {
       from: USUARIO_CORREO,
@@ -35,7 +36,9 @@ export const enviarCorreo = async (
 
     await transporter.sendMail(mailOptions);
     console.log('Correo enviado exitosamente a:', destinatario);
+    return true;
   } catch (error) {
     console.error('Error al enviar el correo:', error);
+    return false;
   }
 };

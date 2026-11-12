@@ -40,6 +40,9 @@ export const correoCompra = async (idCompra: number): Promise<void> => {
         
         Saludos Cordiales.`;
 
-    await enviarCorreo(destinatario, `Solicitud de compra #${compra.id_compra}`, mensaje);
+    const enviado = await enviarCorreo(destinatario, `Solicitud de compra #${compra.id_compra}`, mensaje);
 
+    if (!enviado) {
+        throw new Error('No se pudo enviar el correo al proveedor');
+    }
 };

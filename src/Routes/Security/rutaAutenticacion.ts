@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import * as controladorAutenticacion from '../../Controllers/Security/Autenticacion.js';
-import { validarAutenticacion } from '../../Configs/passport.js';
+import { validarAutenticacion, validarAutenticacionOpcional } from '../../Configs/passport.js';
 
 const router = Router();
 
@@ -17,7 +17,7 @@ const router = Router();
  * /api/security/iniciarsesion:
  *   post:
  *     summary: Iniciar sesión con contraseña o PIN
- *     description: Inicia sesión con un usuario del modelo Usuario utilizando contraseña o PIN.
+ *     description: Inicia sesión con un usuario del modelo Usuario utilizando contraseña o PIN. Tras tres intentos fallidos la cuenta se bloquea durante un minuto.
  *     tags: [Autenticación]
  *     security: []
  *     requestBody:
@@ -53,9 +53,11 @@ const router = Router();
  *       400:
  *         description: Falta un identificador o una credencial válida
  *       401:
- *         description: Credenciales incorrectas
+ *         description: Credenciales incorrectas. La respuesta incluye `intentosRestantes`.
  *       403:
  *         description: Usuario inactivo
+ *       429:
+ *         description: Demasiados intentos fallidos. El inicio de sesión está bloqueado temporalmente (`segundosRestantes` y `bloqueadoHasta`).
  *       500:
  *         description: Error interno al iniciar sesión
  */
@@ -166,8 +168,8 @@ router.get('/perfil', validarAutenticacion, controladorAutenticacion.obtenerPerf
  * @swagger
  * /api/security/enviar-pin:
  *   post:
- *     summary: Generar un PIN temporal
- *     description: Genera y guarda un PIN temporal de cuatro dígitos para el usuario indicado.
+ *     summary: Enviar un PIN temporal por correo electrónico
+ *     description: Genera un PIN temporal de cuatro dígitos y lo envía al correo registrado del usuario. El PIN sirve para restablecer la contraseña y expira en 10 minutos.
  *     tags: [Autenticación]
  *     security: []
  *     requestBody:
@@ -187,7 +189,7 @@ router.get('/perfil', validarAutenticacion, controladorAutenticacion.obtenerPerf
  *                 format: email
  *     responses:
  *       200:
- *         description: PIN temporal generado. Actualmente el PIN se devuelve en la respuesta.
+ *         description: PIN enviado al correo registrado del usuario. Por seguridad el PIN no se devuelve en la respuesta.
  *         content:
  *           application/json:
  *             schema:
@@ -195,14 +197,17 @@ router.get('/perfil', validarAutenticacion, controladorAutenticacion.obtenerPerf
  *               properties:
  *                 message:
  *                   type: string
- *                 pin:
+ *                 expiraEn:
  *                   type: string
+ *                   format: date-time
  *       400:
  *         description: Falta el nombre de usuario o correo electrónico
+ *       403:
+ *         description: Usuario inactivo
  *       404:
  *         description: Usuario no encontrado
  *       500:
- *         description: Error interno al generar el PIN
+ *         description: Error interno al generar o enviar el PIN
  */
 router.post(
   '/enviar-pin',
@@ -223,10 +228,12 @@ router.post(
  * @swagger
  * /api/security/actualizar-contrasena:
  *   post:
- *     summary: Actualizar la contraseña del usuario autenticado
+ *     summary: Actualizar la contraseña
+ *     description: Permite cambiar la contraseña de dos formas. 1) Autenticado (Bearer token) indicando la contraseña actual. 2) Sin autenticación indicando el usuario (o correo) y el PIN enviado por correo con `/enviar-pin`.
  *     tags: [Autenticación]
  *     security:
  *       - bearerAuth: []
+ *       - {}
  *     requestBody:
  *       required: true
  *       content:
@@ -234,6 +241,18 @@ router.post(
  *           schema:
  *             type: object
  *             properties:
+ *               usuario:
+ *                 type: string
+ *                 description: Nombre de usuario o correo electrónico (flujo con PIN)
+ *               username:
+ *                 type: string
+ *               useremail:
+ *                 type: string
+ *                 format: email
+ *               pin:
+ *                 type: string
+ *                 pattern: '^[0-9]{4}$'
+ *                 description: PIN de recuperación enviado por correo
  *               userpswdActual:
  *                 type: string
  *                 format: password
@@ -252,19 +271,23 @@ router.post(
  *                 deprecated: true
  *     responses:
  *       200:
- *         description: Contraseña actualizada exitosamente
+ *         description: Contraseña actualizada exitosamente. Al usar PIN se invalidan el PIN y las sesiones activas.
  *       400:
- *         description: Datos inválidos o contraseña actual incorrecta
+ *         description: Datos inválidos, contraseña actual incorrecta o PIN inválido/expirado
  *       401:
- *         description: Token no proporcionado o inválido
+ *         description: No autenticado y sin usuario/PIN
  *       500:
  *         description: Error al actualizar la contraseña
  */
 router.post(
   '/actualizar-contrasena',
-  validarAutenticacion,
+  validarAutenticacionOpcional,
   body('userpswdActual').optional().isString().notEmpty(),
   body('contrasenaActual').optional().isString().notEmpty(),
+  body('pin').optional().matches(/^\d{4}$/).withMessage('El PIN debe tener cuatro dígitos'),
+  body('usuario').optional().isString(),
+  body('useremail').optional().isEmail().withMessage('El correo no es válido'),
+  body('username').optional().isLength({ min: 3, max: 80 }),
   body('userpswdNueva').optional().isStrongPassword({
     minLength: 8,
     minUppercase: 1,
@@ -278,10 +301,19 @@ router.post(
     minNumbers: 1,
   }).withMessage('La nueva contraseña debe tener al menos 8 caracteres, 1 mayúscula, 1 símbolo y 1 número'),
   body('userpswdActual').custom((_value, { req }) => {
-    if (!(req.body.userpswdActual ?? req.body.contrasenaActual) ||
-      !(req.body.userpswdNueva ?? req.body.nuevaContrasena)) {
-      throw new Error('Debe proporcionar la contraseña actual y la nueva contraseña');
+    const nueva = req.body.userpswdNueva ?? req.body.nuevaContrasena;
+
+    if (!nueva) {
+      throw new Error('Debe proporcionar la nueva contraseña');
     }
+
+    if (!req.user) {
+      const identificador = req.body.useremail ?? req.body.username ?? req.body.usuario;
+      if (!identificador || !req.body.pin) {
+        throw new Error('Debe proporcionar la contraseña actual o, en su defecto, el usuario y el PIN enviado');
+      }
+    }
+
     return true;
   }),
   controladorAutenticacion.actualizarContrasena

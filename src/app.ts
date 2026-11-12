@@ -11,6 +11,7 @@ import rutasCarrito from './Routes/Carrito/rutasCarrito.js';
 import rutasFuncionesRoles from './Routes/FuncionesRoles/rutasFuncionesRoles.js';
 import rutasRolesUsuarios from './Routes/RolesUsuarios/rutasRolesUsuarios.js';
 import rutasAutenticacion from './Routes/Security/rutaAutenticacion.js';
+import rutasRegistro from './Routes/Security/rutaRegistro.js';
 import { setupSwagger } from './Configs/swagger.js';
 import { RUTA_IMAGENES } from './Configs/archivos.js';
 
@@ -26,6 +27,7 @@ app.use('/api/compras', rutasCompras);
 app.use('/api/funciones-roles', rutasFuncionesRoles);
 app.use('/api/roles-usuarios', rutasRolesUsuarios);
 app.use('/api/security', rutasAutenticacion);
+app.use('/api/security', rutasRegistro);
 app.use('/api/catalogo', rutasCatalogo);
 app.use('/api/carrito', rutasCarrito);
 

@@ -23,7 +23,7 @@ export class Usuario extends Model<InferAttributes<Usuario>,
     declare userpswdest: CreationOptional<string>;
     declare userpswdexp: CreationOptional<Date>;
     declare userest: CreationOptional<string>;
-    declare useractcod: CreationOptional<string>;
+    declare useractcod: CreationOptional<string | null>;
     declare userpswdchg: CreationOptional<Date>;
     declare usertipo: CreationOptional<TipoUsuario>;
 }

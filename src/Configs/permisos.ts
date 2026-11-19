@@ -41,20 +41,26 @@ export const FUNCIONES = {
     ROLES_USUARIOS_ACTUALIZAR: '/api/roles-usuarios/actualizar',
     ROLES_USUARIOS_ELIMINAR: '/api/roles-usuarios/eliminar',
 
-    CATALOGO_LISTAR: '/api/catalogo/',
+    CATALOGO_LISTAR: '/api/catalogo',
     CATALOGO_GUARDAR: '/api/catalogo/guardar',
     CATALOGO_IMAGEN: '/api/catalogo/imagen',
     CATALOGO_OBTENER: '/api/catalogo/{id}',
 
-    COMPRAS_LISTAR: 'api/compras/',    
-    COMPRAS_OBTENER: 'api/compras/compra',
-    COMPRAS_GUARDAR: 'api/compras/guardar',
-    COMPRAS_ACTUALIZAR: 'api/compras/actualizar',
-    COMPRAS_ELIMINAR: 'api/compras/eliminar',
-    COMPRAS_CONFIRMAR: 'api/compras/confirmar',
+    PROVEEDOR_LISTAR: '/api/proveedores',
+    PROVEEDOR_OBTENER: '/api/proveedores/proveedor',
+    PROVEEDOR_GUARDAR: '/api/proveedores/guardar',
+    PROVEEDOR_ACTUALIZAR: '/api/proveedores/actualizar',
+    PROVEEDOR_ELIMINAR: '/api/proveedores/eliminar',
 
-    DETALLE_COMPRA_GUARDAR: 'api/compras/detalle/guardar',
-    DETALLE_COMPRA_ELIMINAR: 'api/compras/detalle/eliminar',
+    COMPRAS_LISTAR: '/api/compras',    
+    COMPRAS_OBTENER: '/api/compras/compra',
+    COMPRAS_GUARDAR: '/api/compras/guardar',
+    COMPRAS_ACTUALIZAR: '/api/compras/actualizar',
+    COMPRAS_ELIMINAR: '/api/compras/eliminar',
+    COMPRAS_CONFIRMAR: '/api/compras/confirmar',
+
+    DETALLE_COMPRA_GUARDAR: '/api/compras/detalle/guardar',
+    DETALLE_COMPRA_ELIMINAR: '/api/compras/detalle/eliminar',
 } as const;
 
 const ESTADO_ACTIVO = 'ACT';

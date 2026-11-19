@@ -8,6 +8,9 @@ import {
     eliminarProveedor
 } from "../../Controllers/Proveedor/Proveedor.js";
 
+import { FUNCIONES } from "../../Configs/permisos.js";
+import { autorizarFuncion } from "../../Configs/passport.js";
+
 const rutasProveedores = Router();
 
 /**
@@ -64,6 +67,8 @@ const rutasProveedores = Router();
  *   get:
  *     summary: Listar proveedores
  *     tags: [Proveedores]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: estado
@@ -87,6 +92,7 @@ const rutasProveedores = Router();
  *         description: Error al listar los proveedores
  */
 rutasProveedores.get('/',
+    ...autorizarFuncion(FUNCIONES.PROVEEDOR_LISTAR),
     query('estado')
     .optional()
     .isIn(['Activo', 'Inactivo']).withMessage('El estado debe ser Activo o Inactivo'),
@@ -99,6 +105,8 @@ rutasProveedores.get('/',
  *   get:
  *     summary: Obtener un proveedor por ID
  *     tags: [Proveedores]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -122,6 +130,7 @@ rutasProveedores.get('/',
  *         description: Error al obtener el proveedor
  */
 rutasProveedores.get('/proveedor',
+    ...autorizarFuncion(FUNCIONES.PROVEEDOR_OBTENER),
     query('id')
     .notEmpty().withMessage('El ID del proveedor es obligatorio')
     .isInt().withMessage('El ID del proveedor debe ser un entero'),
@@ -134,6 +143,8 @@ rutasProveedores.get('/proveedor',
  *   post:
  *     summary: Crear un proveedor
  *     tags: [Proveedores]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -180,6 +191,7 @@ rutasProveedores.get('/proveedor',
  *         description: Error al crear el proveedor
  */
 rutasProveedores.post('/guardar',
+    ...autorizarFuncion(FUNCIONES.PROVEEDOR_GUARDAR),
     body('nombre')
     .notEmpty().withMessage('El nombre del proveedor es obligatorio')
     .isLength({ max: 120 }).withMessage('El nombre debe tener máximo 120 caracteres'),
@@ -209,6 +221,8 @@ rutasProveedores.post('/guardar',
  *     summary: Actualizar un proveedor
  *     description: Actualiza solo los campos enviados del proveedor indicado.
  *     tags: [Proveedores]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -257,6 +271,7 @@ rutasProveedores.post('/guardar',
  *         description: Error al actualizar el proveedor
  */
 rutasProveedores.put('/actualizar',
+    ...autorizarFuncion(FUNCIONES.PROVEEDOR_ACTUALIZAR),
     query('id')
     .notEmpty().withMessage('El ID es obligatorio')
     .isInt().withMessage('El ID debe ser un número'),
@@ -290,6 +305,8 @@ rutasProveedores.put('/actualizar',
  *     summary: Eliminar un proveedor
  *     description: No se puede eliminar un proveedor que tenga compras registradas.
  *     tags: [Proveedores]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -311,6 +328,7 @@ rutasProveedores.put('/actualizar',
  *         description: Error al eliminar el proveedor
  */
 rutasProveedores.delete('/eliminar',
+    ...autorizarFuncion(FUNCIONES.PROVEEDOR_ELIMINAR),
     query('id')
     .notEmpty().withMessage('El ID es obligatorio')
     .isInt().withMessage('El ID debe ser un número'),

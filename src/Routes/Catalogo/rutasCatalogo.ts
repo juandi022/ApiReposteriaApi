@@ -26,8 +26,6 @@ const router = Router();
  *   get:
  *     summary: Listar los productos activos
  *     tags: [Catalogo]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de productos
@@ -38,7 +36,7 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/Producto'
  */
-router.get("/", ...autorizarFuncion(FUNCIONES.CATALOGO_LISTAR),listarProductos);
+router.get("/", listarProductos);
 
 /**
  * @swagger
@@ -145,8 +143,6 @@ router.put("/imagen",
  *   get:
  *     summary: Obtener un producto por ID
  *     tags: [Catalogo]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -163,6 +159,6 @@ router.put("/imagen",
  *       404:
  *         description: Producto no encontrado
  */
-router.get("/:id", ...autorizarFuncion(FUNCIONES.CATALOGO_OBTENER), obtenerProducto);
+router.get("/:id", obtenerProducto);
 
 export default router;

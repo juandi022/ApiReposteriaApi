@@ -11,6 +11,9 @@ import {
     confirmarCompra
 } from "../../Controllers/Compra/Compra.js";
 
+import { FUNCIONES } from "../../Configs/permisos.js";
+import { autorizarFuncion } from "../../Configs/passport.js";
+
 const rutasCompras = Router();
 
 /**
@@ -93,6 +96,8 @@ const rutasCompras = Router();
  *   get:
  *     summary: Listar compras
  *     tags: [Compras]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: estado
@@ -122,6 +127,7 @@ const rutasCompras = Router();
  *         description: Error al listar las compras
  */
 rutasCompras.get('/',
+    ...autorizarFuncion(FUNCIONES.COMPRAS_LISTAR),
     query('estado')
     .optional()
     .isIn(['Borrador', 'Confirmada', 'Anulada']).withMessage('El estado debe ser Borrador, Confirmada o Anulada'),
@@ -137,6 +143,8 @@ rutasCompras.get('/',
  *   get:
  *     summary: Obtener una compra por ID con sus detalles
  *     tags: [Compras]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -167,6 +175,7 @@ rutasCompras.get('/',
  *         description: Error al obtener la compra
  */
 rutasCompras.get('/compra',
+    ...autorizarFuncion(FUNCIONES.COMPRAS_OBTENER),
     query('id')
     .notEmpty().withMessage('El ID de la compra es obligatorio')
     .isInt().withMessage('El ID de la compra debe ser un entero'),
@@ -179,6 +188,8 @@ rutasCompras.get('/compra',
  *   post:
  *     summary: Crear una compra en estado Borrador
  *     tags: [Compras]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -216,6 +227,7 @@ rutasCompras.get('/compra',
  *         description: Error al crear la compra
  */
 rutasCompras.post('/guardar',
+    ...autorizarFuncion(FUNCIONES.COMPRAS_GUARDAR),
     body('id_proveedor')
     .notEmpty().withMessage('El proveedor es obligatorio')
     .isInt({ min: 1 }).withMessage('El ID del proveedor debe ser un entero'),
@@ -234,6 +246,8 @@ rutasCompras.post('/guardar',
  *   put:
  *     summary: Actualizar una compra en Borrador
  *     tags: [Compras]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -274,6 +288,7 @@ rutasCompras.post('/guardar',
  *         description: Error al actualizar la compra
  */
 rutasCompras.put('/actualizar',
+    ...autorizarFuncion(FUNCIONES.COMPRAS_ACTUALIZAR),
     query('id')
     .notEmpty().withMessage('El ID es obligatorio')
     .isInt().withMessage('El ID debe ser un número'),
@@ -297,6 +312,8 @@ rutasCompras.put('/actualizar',
  *     summary: Eliminar una compra en Borrador
  *     description: Solo se pueden eliminar compras en estado Borrador. También elimina sus detalles.
  *     tags: [Compras]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -318,6 +335,7 @@ rutasCompras.put('/actualizar',
  *         description: Error al eliminar la compra
  */
 rutasCompras.delete('/eliminar',
+    ...autorizarFuncion(FUNCIONES.COMPRAS_ELIMINAR),
     query('id')
     .notEmpty().withMessage('El ID es obligatorio')
     .isInt().withMessage('El ID debe ser un número'),
@@ -331,6 +349,8 @@ rutasCompras.delete('/eliminar',
  *     summary: Agregar un producto a una compra en Borrador
  *     description: Recalcula automáticamente el subtotal, impuesto (15%) y total de la compra.
  *     tags: [Compras]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -381,6 +401,7 @@ rutasCompras.delete('/eliminar',
  *         description: Error al agregar el detalle
  */
 rutasCompras.post('/detalle/guardar',
+    ...autorizarFuncion(FUNCIONES.DETALLE_COMPRA_GUARDAR),
     query('id')
     .notEmpty().withMessage('El ID de la compra es obligatorio')
     .isInt().withMessage('El ID de la compra debe ser un número'),
@@ -403,6 +424,8 @@ rutasCompras.post('/detalle/guardar',
  *     summary: Eliminar un detalle de una compra en Borrador
  *     description: Recalcula automáticamente los totales de la compra.
  *     tags: [Compras]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -440,6 +463,7 @@ rutasCompras.post('/detalle/guardar',
  *         description: Error al eliminar el detalle
  */
 rutasCompras.delete('/detalle/eliminar',
+    ...autorizarFuncion(FUNCIONES.DETALLE_COMPRA_ELIMINAR),
     query('id')
     .notEmpty().withMessage('El ID de la compra es obligatorio')
     .isInt().withMessage('El ID de la compra debe ser un número'),
@@ -456,6 +480,8 @@ rutasCompras.delete('/detalle/eliminar',
  *     summary: Confirmar una compra y actualizar el inventario
  *     description: Pasa la compra de Borrador a Confirmada, suma las cantidades al stock de cada producto y envía un correo al proveedor.
  *     tags: [Compras]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -488,6 +514,7 @@ rutasCompras.delete('/detalle/eliminar',
  *         description: Error al confirmar la compra
  */
 rutasCompras.put('/confirmar',
+    ...autorizarFuncion(FUNCIONES.COMPRAS_CONFIRMAR),
     query('id')
     .notEmpty().withMessage('El ID es obligatorio')
     .isInt().withMessage('El ID debe ser un número'),

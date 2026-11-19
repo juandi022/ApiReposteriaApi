@@ -111,7 +111,7 @@ router.post('/cerrarsesion', validarAutenticacion, controladorAutenticacion.cerr
  * /api/security/token-prueba:
  *   post:
  *     summary: Generar un token de prueba
- *     description: Genera un JWT a partir del objeto enviado. No crea una sesión activa en la base de datos.
+ *     description: Genera un JWT a partir del objeto enviado. No crea una sesión activa en la base de datos, por lo que no autoriza ninguna ruta. El campo usertipo es solo informativo; los permisos se obtienen de roles_usuarios, roles, funciones_roles y funciones.
  *     tags: [Autenticación]
  *     security: []
  *     requestBody:

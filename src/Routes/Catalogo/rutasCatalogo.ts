@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { body, query } from "express-validator";
+import { autorizarFuncion } from "../../Configs/passport.js";
+import { FUNCIONES } from "../../Configs/permisos.js";
 
 import {
     listarProductos,
@@ -24,6 +26,8 @@ const router = Router();
  *   get:
  *     summary: Listar los productos activos
  *     tags: [Catalogo]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de productos
@@ -34,7 +38,7 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/Producto'
  */
-router.get("/", listarProductos);
+router.get("/", ...autorizarFuncion(FUNCIONES.CATALOGO_LISTAR),listarProductos);
 
 /**
  * @swagger
@@ -42,6 +46,8 @@ router.get("/", listarProductos);
  *   post:
  *     summary: Crear un producto (sin imagen)
  *     tags: [Catalogo]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -73,6 +79,7 @@ router.get("/", listarProductos);
  *         description: Datos inválidos
  */
 router.post("/guardar",
+    ...autorizarFuncion(FUNCIONES.CATALOGO_GUARDAR),
     body("nombre")
         .notEmpty().withMessage("El nombre es obligatorio")
         .isLength({ max: 150 }).withMessage("El nombre debe tener máximo 150 caracteres"),
@@ -94,6 +101,8 @@ router.post("/guardar",
  *   put:
  *     summary: Subir o reemplazar la imagen de un producto
  *     tags: [Catalogo]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -122,6 +131,7 @@ router.post("/guardar",
  *         description: Producto no encontrado
  */
 router.put("/imagen",
+    ...autorizarFuncion(FUNCIONES.CATALOGO_IMAGEN),
     query("id")
         .notEmpty().withMessage("El ID es obligatorio")
         .isInt().withMessage("El ID debe ser un número entero"),
@@ -135,6 +145,8 @@ router.put("/imagen",
  *   get:
  *     summary: Obtener un producto por ID
  *     tags: [Catalogo]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -151,6 +163,6 @@ router.put("/imagen",
  *       404:
  *         description: Producto no encontrado
  */
-router.get("/:id", obtenerProducto);
+router.get("/:id", ...autorizarFuncion(FUNCIONES.CATALOGO_OBTENER), obtenerProducto);
 
 export default router;

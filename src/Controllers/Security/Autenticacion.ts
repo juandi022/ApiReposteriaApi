@@ -123,14 +123,9 @@ const validarPin = async (usuario: Usuario, pin: string): Promise<boolean> => {
 const validarCredencial = async (
   usuario: Usuario,
   userpswd: unknown,
-  pin: unknown
 ): Promise<boolean> => {
   if (typeof userpswd === 'string' && userpswd.length > 0) {
     return bcrypt.compare(userpswd, usuario.userpswd);
-  }
-
-  if (typeof pin === 'string' && pin.length > 0) {
-    return validarPin(usuario, pin);
   }
 
   return false;
@@ -142,12 +137,12 @@ export const iniciarSesion = async (req: Request, res: Response): Promise<Respon
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const identificador = req.body.useremail ?? req.body.username ?? req.body.usuario;
+  const identificador = req.body.useremail ?? req.body.username;
   const userpswd = req.body.userpswd ?? req.body.contrasena;
-  const pin = req.body.pin;
+  
 
-  if (typeof identificador !== 'string' || (!userpswd && !pin)) {
-    return res.status(400).json({ error: 'Debe proporcionar usuario y contraseña o PIN' });
+  if (typeof identificador !== 'string' || (!userpswd)) {
+    return res.status(400).json({ error: 'Debe proporcionar usuario y contraseña' });
   }
 
   try {
@@ -183,7 +178,7 @@ export const iniciarSesion = async (req: Request, res: Response): Promise<Respon
       return res.status(403).json({ error: 'El usuario se encuentra inactivo' });
     }
 
-    const credencialValida = await validarCredencial(usuarioBD, userpswd, pin);
+    const credencialValida = await validarCredencial(usuarioBD, userpswd);
 
     if (!credencialValida) {
       const resultado = await registrarIntentoFallido(claveIntento);

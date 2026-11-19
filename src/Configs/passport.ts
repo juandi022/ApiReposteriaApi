@@ -3,11 +3,12 @@ import crypto from 'crypto';
 import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt, StrategyOptionsWithRequest } from 'passport-jwt';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 // Importa tus modelos de Sequelize
 import Usuario from '../Model/Usuario.js';
 import Sesion from '../Model/Sesion.js';
+import { obtenerRolesActivos, usuarioTieneFuncion } from './permisos.js';
 
 dotenv.config();
 
@@ -53,8 +54,10 @@ declare global {
       usercod: number;
       useremail: string;
       username: string;
+      // `usertipo` se conserva solo como dato informativo del perfil.
+      // La autorización se basa en los roles y funciones de la base de datos.
       usertipo?: string;
-      rol?: string;
+      roles: string[];
       userest?: string;
     }
 
@@ -108,13 +111,17 @@ passport.use(
         return done(null, false, { message: 'El usuario se encuentra inactivo o deshabilitado' });
       }
 
+      // Los roles vigentes se consultan en cada petición para que los cambios
+      // en roles_usuarios/roles surtan efecto sin necesidad de reenviar el token.
+      const roles = await obtenerRolesActivos(usuario.usercod);
+
       return done(null, {
         id: usuario.usercod,
         usercod: usuario.usercod,
         useremail: usuario.useremail,
         username: usuario.username,
         usertipo: usuario.usertipo,
-        rol: usuario.usertipo,
+        roles,
         userest: usuario.userest,
       });
     } catch (err) {
@@ -123,7 +130,7 @@ passport.use(
   })
 );
 
-/** Genera un token con la expiración por defecto (10 días). */
+/** Genera un token para recuperar contraseña con la expiración por defecto (10 días). */
 export const getToken = (data: object): string =>
   jwt.sign(data, CLAVE_TOKEN, { algorithm: ALGORITMO, expiresIn: EXPIRACION_DEFECTO });
 
@@ -225,24 +232,35 @@ export const validarAutenticacionOpcional = (req: Request, _res: Response, next:
   })(req, _res, next);
 };
 
+/** Respuesta común cuando la petición no tiene un usuario autenticado. */
+const responderNoAutenticado = (res: Response): void => {
+  res.status(401).json({
+    error: 'Token no proporcionado o inválido',
+    codigo: 'NO_AUTENTICADO',
+  });
+};
+
 /**
  * Middleware de autorización por rol. Se usa DESPUÉS de validarAutenticacion.
+ * Los roles se obtienen de roles_usuarios + roles, nunca de `usertipo`.
  */
 export const permitirRoles = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({
-        error: 'Token no proporcionado o inválido',
-        codigo: 'NO_AUTENTICADO',
-      });
+      responderNoAutenticado(res);
       return;
     }
 
-    const usertipo = req.user.usertipo ?? req.user.rol;
-    if (!usertipo || !roles.includes(usertipo)) {
+    const rolesDelUsuario = req.user.roles ?? [];
+    const autorizado = roles.length === 0
+      ? rolesDelUsuario.length > 0
+      : roles.some((rol) => rolesDelUsuario.includes(rol));
+
+    if (!autorizado) {
       res.status(403).json({
         error: 'No tiene permisos para realizar esta acción',
         codigo: 'ACCESO_DENEGADO',
+        rolesRequeridos: roles,
       });
       return;
     }
@@ -250,5 +268,45 @@ export const permitirRoles = (...roles: string[]) => {
     next();
   };
 };
+
+/**
+ * Middleware de autorización por función. Recorre la cadena
+ * roles_usuarios -> roles -> funciones_roles -> funciones en cada petición.
+ * Se usa DESPUÉS de validarAutenticacion.
+ */
+export const requerirFuncion = (...funciones: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      responderNoAutenticado(res);
+      return;
+    }
+
+    try {
+      const resultados = await Promise.all(
+        funciones.map((fncod) => usuarioTieneFuncion(req.user!.usercod, fncod))
+      );
+
+      if (!resultados.some(Boolean)) {
+        res.status(403).json({
+          error: 'No tiene permisos para realizar esta acción',
+          codigo: 'FUNCION_NO_AUTORIZADA',
+          funcionesRequeridas: funciones,
+        });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      console.error('Error al verificar permisos:', error);
+      res.status(500).json({ error: 'Error interno al verificar permisos' });
+    }
+  };
+};
+
+/** Middleware listo para proteger una ruta con autenticación + función. */
+export const autorizarFuncion = (fncod: string): RequestHandler[] => [
+  validarAutenticacion,
+  requerirFuncion(fncod),
+];
 
 export { passport };

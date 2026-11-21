@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { body, query } from "express-validator";
 
+import { autorizarFuncion } from "../../Configs/passport.js";
+import { FUNCIONES } from "../../Configs/permisos.js";
+
 import {
     listarRoles,
     actualizarRol,
@@ -45,7 +48,13 @@ const rutasRoles = Router();
  *   get:
  *     summary: Listar roles
  *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Lista de roles
  *         content:
@@ -57,7 +66,7 @@ const rutasRoles = Router();
  *       500:
  *         description: Error al listar los roles
  */
-rutasRoles.get('/', listarRoles);
+rutasRoles.get('/', ...autorizarFuncion(FUNCIONES.ROLES_LISTAR), listarRoles);
 
 /**
  * @swagger
@@ -65,6 +74,8 @@ rutasRoles.get('/', listarRoles);
  *   get:
  *     summary: Obtener un rol por código
  *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: rolescod
@@ -75,6 +86,10 @@ rutasRoles.get('/', listarRoles);
  *           maxLength: 15
  *           example: ADM
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Rol encontrado
  *         content:
@@ -89,6 +104,7 @@ rutasRoles.get('/', listarRoles);
  *         description: Error al obtener el rol
  */
 rutasRoles.get('/rol',
+    ...autorizarFuncion(FUNCIONES.ROLES_OBTENER),
     query('rolescod')
         .notEmpty()
         .withMessage('El código del rol es obligatorio')
@@ -103,6 +119,8 @@ rutasRoles.get('/rol',
  *   post:
  *     summary: Crear un rol
  *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -124,6 +142,10 @@ rutasRoles.get('/rol',
  *                 enum: [ACT, INA]
  *                 example: ACT
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       201:
  *         description: Rol creado correctamente
  *         content:
@@ -136,6 +158,7 @@ rutasRoles.get('/rol',
  *         description: Error al crear el rol
  */
 rutasRoles.post('/guardar',
+    ...autorizarFuncion(FUNCIONES.ROLES_GUARDAR),
     body('rolescod')
         .notEmpty()
         .withMessage('El código del rol es obligatorio')
@@ -166,6 +189,8 @@ rutasRoles.post('/guardar',
  *     summary: Actualizar un rol
  *     description: Actualiza la descripción y/o el estado del rol indicado.
  *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: rolescod
@@ -190,6 +215,10 @@ rutasRoles.post('/guardar',
  *                 enum: [ACT, INA]
  *                 example: ACT
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Rol actualizado correctamente
  *         content:
@@ -204,6 +233,7 @@ rutasRoles.post('/guardar',
  *         description: Error al actualizar el rol
  */
 rutasRoles.put('/actualizar',
+    ...autorizarFuncion(FUNCIONES.ROLES_ACTUALIZAR),
     query('rolescod')
         .notEmpty()
         .withMessage('El código del rol es obligatorio')
@@ -231,6 +261,8 @@ rutasRoles.put('/actualizar',
  *   delete:
  *     summary: Eliminar un rol
  *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: rolescod
@@ -241,6 +273,10 @@ rutasRoles.put('/actualizar',
  *           maxLength: 15
  *           example: ADM
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Rol eliminado correctamente
  *       400:
@@ -251,6 +287,7 @@ rutasRoles.put('/actualizar',
  *         description: Error al eliminar el rol
  */
 rutasRoles.delete('/eliminar',
+    ...autorizarFuncion(FUNCIONES.ROLES_ELIMINAR),
     query('rolescod')
         .notEmpty()
         .withMessage('El código del rol es obligatorio')

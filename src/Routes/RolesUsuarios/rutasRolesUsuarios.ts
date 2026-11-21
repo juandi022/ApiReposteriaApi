@@ -1,5 +1,9 @@
 import { Router } from "express";
 import { body, query } from "express-validator";
+
+import { autorizarFuncion } from "../../Configs/passport.js";
+import { FUNCIONES } from "../../Configs/permisos.js";
+
 import {
     listarRolesUsuarios,
     obtenerRolesUsuariosPorId,
@@ -51,7 +55,13 @@ const router = Router();
  *   get:
  *     summary: Listar asignaciones de roles a usuarios
  *     tags: [Roles-Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Lista de asignaciones
  *         content:
@@ -63,7 +73,7 @@ const router = Router();
  *       500:
  *         description: Error al listar las asignaciones
  */
-router.get("/", listarRolesUsuarios);
+router.get("/", ...autorizarFuncion(FUNCIONES.ROLES_USUARIOS_LISTAR), listarRolesUsuarios);
 
 /**
  * @swagger
@@ -71,6 +81,8 @@ router.get("/", listarRolesUsuarios);
  *   get:
  *     summary: Obtener una asignación por usuario y rol
  *     tags: [Roles-Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: usercod
@@ -88,6 +100,10 @@ router.get("/", listarRolesUsuarios);
  *           type: string
  *           example: ADM
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Asignación encontrada
  *         content:
@@ -103,6 +119,7 @@ router.get("/", listarRolesUsuarios);
  */
 router.get(
     "/asignacion",
+    ...autorizarFuncion(FUNCIONES.ROLES_USUARIOS_OBTENER),
     [
         query("usercod").notEmpty().isInt({ min: 1 }),
         query("rolescod").notEmpty()
@@ -116,6 +133,8 @@ router.get(
  *   post:
  *     summary: Asignar un rol a un usuario
  *     tags: [Roles-Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -147,6 +166,10 @@ router.get(
  *                 nullable: true
  *                 example: '2027-12-31T23:59:59.000Z'
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       201:
  *         description: Rol asignado correctamente
  *         content:
@@ -167,6 +190,7 @@ router.get(
  */
 router.post(
     "/guardar",
+    ...autorizarFuncion(FUNCIONES.ROLES_USUARIOS_GUARDAR),
     [
         body("usercod").notEmpty().isInt({ min: 1 }),
         body("rolescod").notEmpty().isLength({ max: 15 }),
@@ -183,6 +207,8 @@ router.post(
  *   put:
  *     summary: Actualizar una asignación de rol a usuario
  *     tags: [Roles-Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: usercod
@@ -218,6 +244,10 @@ router.post(
  *                 format: date-time
  *                 nullable: true
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Asignación actualizada correctamente
  *         content:
@@ -238,6 +268,7 @@ router.post(
  */
 router.put(
     "/actualizar",
+    ...autorizarFuncion(FUNCIONES.ROLES_USUARIOS_ACTUALIZAR),
     [
         query("usercod").notEmpty().isInt({ min: 1 }),
         query("rolescod").notEmpty(),
@@ -254,6 +285,8 @@ router.put(
  *   delete:
  *     summary: Eliminar una asignación de rol a usuario
  *     tags: [Roles-Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: usercod
@@ -271,6 +304,10 @@ router.put(
  *           type: string
  *           example: ADM
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Asignación eliminada correctamente
  *       400:
@@ -282,6 +319,7 @@ router.put(
  */
 router.delete(
     "/eliminar",
+    ...autorizarFuncion(FUNCIONES.ROLES_USUARIOS_ELIMINAR),
     [
         query("usercod").notEmpty().isInt({ min: 1 }),
         query("rolescod").notEmpty()

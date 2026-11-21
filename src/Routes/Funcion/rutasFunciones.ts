@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { body, query } from "express-validator";
 
+import { autorizarFuncion } from "../../Configs/passport.js";
+import { FUNCIONES } from "../../Configs/permisos.js";
+
 import {
     listarFunciones,
     actualizarFuncion,
@@ -49,7 +52,13 @@ const rutasFunciones = Router();
  *   get:
  *     summary: Listar funciones
  *     tags: [Funciones]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Lista de funciones
  *         content:
@@ -61,7 +70,7 @@ const rutasFunciones = Router();
  *       500:
  *         description: Error al listar las funciones
  */
-rutasFunciones.get('/', listarFunciones);
+rutasFunciones.get('/', ...autorizarFuncion(FUNCIONES.FUNCIONES_LISTAR), listarFunciones);
 
 /**
  * @swagger
@@ -69,6 +78,8 @@ rutasFunciones.get('/', listarFunciones);
  *   get:
  *     summary: Obtener una función por código
  *     tags: [Funciones]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: fncod
@@ -79,6 +90,10 @@ rutasFunciones.get('/', listarFunciones);
  *           maxLength: 255
  *           example: usuarios.listar
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Función encontrada
  *         content:
@@ -93,6 +108,7 @@ rutasFunciones.get('/', listarFunciones);
  *         description: Error al obtener la función
  */
 rutasFunciones.get('/funcion',
+    ...autorizarFuncion(FUNCIONES.FUNCIONES_OBTENER),
     query('fncod')
         .notEmpty()
         .withMessage('El código de la función es obligatorio')
@@ -107,6 +123,8 @@ rutasFunciones.get('/funcion',
  *   post:
  *     summary: Crear una función
  *     tags: [Funciones]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -132,6 +150,10 @@ rutasFunciones.get('/funcion',
  *                 maxLength: 3
  *                 example: MEN
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       201:
  *         description: Función creada correctamente
  *         content:
@@ -144,6 +166,7 @@ rutasFunciones.get('/funcion',
  *         description: Error al crear la función
  */
 rutasFunciones.post('/guardar',
+    ...autorizarFuncion(FUNCIONES.FUNCIONES_GUARDAR),
     body('fncod')
         .notEmpty()
         .withMessage('El código de la función es obligatorio')
@@ -180,6 +203,8 @@ rutasFunciones.post('/guardar',
  *     summary: Actualizar una función
  *     description: Actualiza la descripción, el estado y/o el tipo de la función indicada.
  *     tags: [Funciones]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: fncod
@@ -208,6 +233,10 @@ rutasFunciones.post('/guardar',
  *                 maxLength: 3
  *                 example: MEN
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Función actualizada correctamente
  *         content:
@@ -222,6 +251,7 @@ rutasFunciones.post('/guardar',
  *         description: Error al actualizar la función
  */
 rutasFunciones.put('/actualizar',
+    ...autorizarFuncion(FUNCIONES.FUNCIONES_ACTUALIZAR),
     query('fncod')
         .notEmpty()
         .withMessage('El código de la función es obligatorio')
@@ -254,6 +284,8 @@ rutasFunciones.put('/actualizar',
  *   delete:
  *     summary: Eliminar una función
  *     tags: [Funciones]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: fncod
@@ -264,6 +296,10 @@ rutasFunciones.put('/actualizar',
  *           maxLength: 255
  *           example: usuarios.listar
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Función eliminada correctamente
  *       400:
@@ -274,6 +310,7 @@ rutasFunciones.put('/actualizar',
  *         description: Error al eliminar la función
  */
 rutasFunciones.delete('/eliminar',
+    ...autorizarFuncion(FUNCIONES.FUNCIONES_ELIMINAR),
     query('fncod')
         .notEmpty()
         .withMessage('El código de la función es obligatorio')

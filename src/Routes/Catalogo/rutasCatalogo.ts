@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { body, query } from "express-validator";
+import { autorizarFuncion } from "../../Configs/passport.js";
+import { FUNCIONES } from "../../Configs/permisos.js";
 
 import {
     listarProductos,
@@ -42,6 +44,8 @@ router.get("/", listarProductos);
  *   post:
  *     summary: Crear un producto (sin imagen)
  *     tags: [Catalogo]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -73,6 +77,7 @@ router.get("/", listarProductos);
  *         description: Datos inválidos
  */
 router.post("/guardar",
+    ...autorizarFuncion(FUNCIONES.CATALOGO_GUARDAR),
     body("nombre")
         .notEmpty().withMessage("El nombre es obligatorio")
         .isLength({ max: 150 }).withMessage("El nombre debe tener máximo 150 caracteres"),
@@ -94,6 +99,8 @@ router.post("/guardar",
  *   put:
  *     summary: Subir o reemplazar la imagen de un producto
  *     tags: [Catalogo]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -122,6 +129,7 @@ router.post("/guardar",
  *         description: Producto no encontrado
  */
 router.put("/imagen",
+    ...autorizarFuncion(FUNCIONES.CATALOGO_IMAGEN),
     query("id")
         .notEmpty().withMessage("El ID es obligatorio")
         .isInt().withMessage("El ID debe ser un número entero"),

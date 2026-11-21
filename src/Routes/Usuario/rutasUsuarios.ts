@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { body, query } from "express-validator";
 import { listarUsuarios, actualizarUsuario, eliminarUsuario, guardarUsuario, obtenerUsuarioPorId } from "../../Controllers/Usuario/Usuario.js";
+import { autorizarFuncion } from "../../Configs/passport.js";
+import { FUNCIONES } from "../../Configs/permisos.js";
 
 const rutasUsuarios = Router();
 
@@ -17,7 +19,13 @@ const rutasUsuarios = Router();
  *   get:
  *     summary: Listar usuarios
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Lista de usuarios
  *         content:
@@ -29,7 +37,7 @@ const rutasUsuarios = Router();
  *       500:
  *         description: Error al listar los usuarios
  */
-rutasUsuarios.get('/', listarUsuarios);
+rutasUsuarios.get('/', ...autorizarFuncion(FUNCIONES.USUARIOS_LISTAR), listarUsuarios);
 
 /**
  * @swagger
@@ -37,6 +45,8 @@ rutasUsuarios.get('/', listarUsuarios);
  *   get:
  *     summary: Obtener un usuario por ID
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -46,6 +56,10 @@ rutasUsuarios.get('/', listarUsuarios);
  *           type: integer
  *           example: 1
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Usuario encontrado
  *         content:
@@ -60,6 +74,7 @@ rutasUsuarios.get('/', listarUsuarios);
  *         description: Error al obtener el usuario
  */
 rutasUsuarios.get('/usuario',
+    ...autorizarFuncion(FUNCIONES.USUARIOS_OBTENER),
     query('id')
     .notEmpty().withMessage('El ID del usuario es obligatorio')
     .isInt().withMessage('El ID del usuario debe ser un entero'),
@@ -72,6 +87,8 @@ rutasUsuarios.get('/usuario',
  *   post:
  *     summary: Registrar un usuario
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -113,6 +130,10 @@ rutasUsuarios.get('/usuario',
  *                 maxLength: 3
  *                 enum: [PLB, ADM, AUD]
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       201:
  *         description: Usuario creado
  *         content:
@@ -125,6 +146,7 @@ rutasUsuarios.get('/usuario',
  *         description: Error al crear el usuario
  */
 rutasUsuarios.post('/guardar',
+    ...autorizarFuncion(FUNCIONES.USUARIOS_GUARDAR),
     body('useremail')
     .isEmail().withMessage('El email no es válido')
     .notEmpty().withMessage('El email es obligatorio'),
@@ -157,6 +179,8 @@ rutasUsuarios.post('/guardar',
  *     summary: Actualizar un usuario
  *     description: Actualiza los campos enviados para el usuario indicado.
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -206,6 +230,10 @@ rutasUsuarios.post('/guardar',
  *                 type: string
  *                 format: date
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Usuario actualizado
  *         content:
@@ -220,6 +248,7 @@ rutasUsuarios.post('/guardar',
  *         description: Error al actualizar el usuario
  */
 rutasUsuarios.put('/actualizar',
+    ...autorizarFuncion(FUNCIONES.USUARIOS_ACTUALIZAR),
     query('id')
     .notEmpty().withMessage('El ID es obligatorio')
     .isInt().withMessage('El ID debe ser un número'),
@@ -258,6 +287,8 @@ rutasUsuarios.put('/actualizar',
  *   delete:
  *     summary: Eliminar un usuario
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: id
@@ -267,6 +298,10 @@ rutasUsuarios.put('/actualizar',
  *           type: integer
  *           example: 1
  *     responses:
+ *       401:
+ *         description: Token no proporcionado, inválido o sesión cerrada
+ *       403:
+ *         description: El usuario no tiene la función requerida para esta ruta
  *       200:
  *         description: Usuario eliminado correctamente
  *         content:
@@ -285,6 +320,7 @@ rutasUsuarios.put('/actualizar',
  *         description: Error al eliminar el usuario
  */
 rutasUsuarios.delete('/eliminar',
+    ...autorizarFuncion(FUNCIONES.USUARIOS_ELIMINAR),
     query('id')
     .notEmpty().withMessage('El ID es obligatorio')
     .isInt().withMessage('El ID debe ser un número'),

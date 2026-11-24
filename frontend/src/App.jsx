@@ -10,57 +10,14 @@ import {
   registro,
   setToken,
 } from './api.js';
-import {
-  ComprasModulo,
-  FuncionesModulo,
-  FuncionesRolesModulo,
-  ProveedoresModulo,
-  RolesModulo,
-  RolesUsuariosModulo,
-  UsuariosModulo,
-} from './Modulos.jsx';
+import { ComprasModulo, ProveedoresModulo } from './Modulos.jsx';
 
 const esCorreo = (valor) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
 const contrasenaValida = (valor) => /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(valor);
 
-const GRUPOS_MODULOS = ['Acceso', 'Permisos', 'Abastecimiento', 'Red de suministro'];
+const GRUPOS_MODULOS = ['Abastecimiento', 'Red de suministro'];
 
 const MODULOS = [
-  {
-    id: 'usuarios',
-    grupo: 'Acceso',
-    etiqueta: 'Usuarios',
-    descripcion: 'Cuentas, estados y tipos de usuario.',
-    componente: UsuariosModulo,
-  },
-  {
-    id: 'roles',
-    grupo: 'Acceso',
-    etiqueta: 'Roles',
-    descripcion: 'Perfiles disponibles en el sistema.',
-    componente: RolesModulo,
-  },
-  {
-    id: 'funciones',
-    grupo: 'Permisos',
-    etiqueta: 'Funciones',
-    descripcion: 'Acciones que pueden otorgarse a los roles.',
-    componente: FuncionesModulo,
-  },
-  {
-    id: 'funciones-roles',
-    grupo: 'Permisos',
-    etiqueta: 'Funciones por rol',
-    descripcion: 'Asignación de permisos a cada rol.',
-    componente: FuncionesRolesModulo,
-  },
-  {
-    id: 'roles-usuarios',
-    grupo: 'Acceso',
-    etiqueta: 'Roles por usuario',
-    descripcion: 'Asignación de roles y vigencia.',
-    componente: RolesUsuariosModulo,
-  },
   {
     id: 'compras',
     grupo: 'Abastecimiento',

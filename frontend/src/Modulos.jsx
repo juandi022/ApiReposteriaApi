@@ -1,49 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   actualizarCompra,
-  actualizarFuncion,
-  actualizarFuncionRol,
   actualizarProveedor,
-  actualizarRol,
-  actualizarRolUsuario,
-  actualizarUsuario,
   agregarDetalleCompra,
   confirmarCompra,
   crearCompra,
-  crearFuncion,
-  crearFuncionRol,
   crearProveedor,
-  crearRol,
-  crearRolUsuario,
-  crearUsuario,
   eliminarCompra,
   eliminarDetalleCompra,
-  eliminarFuncion,
-  eliminarFuncionRol,
   eliminarProveedor,
-  eliminarRol,
-  eliminarRolUsuario,
-  eliminarUsuario,
   listarCompras,
-  listarFunciones,
-  listarFuncionesRoles,
   listarProductos,
   listarProveedores,
-  listarRoles,
-  listarRolesUsuarios,
-  listarUsuarios,
   obtenerCompra,
 } from './api.js';
 
 const opcionesDe = (...valores) => valores.map((valor) => ({ valor, etiqueta: valor }));
 
-const OPCIONES_ESTADO = opcionesDe('ACT', 'INA');
 const OPCIONES_ESTADO_PROVEEDOR = opcionesDe('Activo', 'Inactivo');
 const OPCIONES_ESTADO_COMPRA = opcionesDe('Borrador', 'Confirmada', 'Anulada');
-const OPCIONES_ESTADO_ASIGNACION = [
-  { valor: '', etiqueta: 'Sin estado (se considera activo)' },
-  ...OPCIONES_ESTADO,
-];
 
 const clavePor = (nombre) => (registro) => ({ [nombre]: registro[nombre] });
 
@@ -419,256 +394,6 @@ function CrudModulo({
         </div>
       </form>
     </article>
-  );
-}
-
-/* ACCESO */
-
-const CAMPOS_USUARIOS = [
-  { nombre: 'useremail', etiqueta: 'Correo electrónico', tipo: 'email', requerido: true, maxLength: 80 },
-  { nombre: 'username', etiqueta: 'Nombre de usuario', tipo: 'text', requerido: true, maxLength: 80 },
-  {
-    nombre: 'userpswd',
-    etiqueta: 'Contraseña',
-    tipo: 'password',
-    requerido: true,
-    soloCrear: true,
-    maxLength: 128,
-    autoComplete: 'new-password',
-    ayuda: 'Mínimo 8 caracteres, una mayúscula, un número y un símbolo.',
-  },
-  { nombre: 'userpswdest', etiqueta: 'Estado de la contraseña', tipo: 'select', requerido: true, opciones: OPCIONES_ESTADO, valorInicial: 'ACT' },
-  { nombre: 'userest', etiqueta: 'Estado del usuario', tipo: 'select', requerido: true, opciones: OPCIONES_ESTADO, valorInicial: 'ACT' },
-  { nombre: 'usertipo', etiqueta: 'Tipo de usuario', tipo: 'select', requerido: true, opciones: opcionesDe('PLB', 'ADM', 'AUD'), valorInicial: 'PLB' },
-  { nombre: 'useractcod', etiqueta: 'Código de activación', tipo: 'text', maxLength: 128 },
-];
-
-const COLUMNAS_USUARIOS = [
-  { titulo: 'ID', clave: 'usercod' },
-  { titulo: 'Usuario', clave: 'username' },
-  { titulo: 'Correo', clave: 'useremail' },
-  { titulo: 'Tipo', clave: 'usertipo' },
-  { titulo: 'Estado', clave: 'userest', formato: (valor) => <EtiquetaEstado valor={valor} /> },
-  { titulo: 'Contraseña', clave: 'userpswdest', formato: (valor) => <EtiquetaEstado valor={valor} /> },
-];
-
-const SERVICIO_USUARIOS = {
-  listar: listarUsuarios,
-  crear: crearUsuario,
-  actualizar: (clave, datos) => actualizarUsuario(clave.id, datos),
-  eliminar: (clave) => eliminarUsuario(clave.id),
-};
-
-const CAMPOS_ROLES = [
-  { nombre: 'rolescod', etiqueta: 'Código del rol', tipo: 'text', requerido: true, maxLength: 15 },
-  { nombre: 'rolesdsc', etiqueta: 'Descripción', tipo: 'text', requerido: true, maxLength: 45 },
-  { nombre: 'rolesest', etiqueta: 'Estado', tipo: 'select', requerido: true, opciones: OPCIONES_ESTADO, valorInicial: 'ACT' },
-];
-
-const COLUMNAS_ROLES = [
-  { titulo: 'Código', clave: 'rolescod' },
-  { titulo: 'Descripción', clave: 'rolesdsc' },
-  { titulo: 'Estado', clave: 'rolesest', formato: (valor) => <EtiquetaEstado valor={valor} /> },
-];
-
-const SERVICIO_ROLES = {
-  listar: listarRoles,
-  crear: crearRol,
-  actualizar: (clave, datos) => actualizarRol(clave.rolescod, datos),
-  eliminar: (clave) => eliminarRol(clave.rolescod),
-};
-
-export function UsuariosModulo() {
-  return (
-    <CrudModulo
-      titulo="Usuarios"
-      descripcion="Administra las cuentas, el estado y el tipo de usuario."
-      servicio={SERVICIO_USUARIOS}
-      campos={CAMPOS_USUARIOS}
-      columnas={COLUMNAS_USUARIOS}
-      clave={clavePor('usercod')}
-      nombreRegistro="usuario"
-      inicial={formularioInicial(CAMPOS_USUARIOS)}
-      etiquetaRegistro={(registro) => `el usuario ${registro.username}`}
-    />
-  );
-}
-
-export function RolesModulo() {
-  return (
-    <CrudModulo
-      titulo="Roles"
-      descripcion="Define los perfiles que se pueden asignar a los usuarios."
-      servicio={SERVICIO_ROLES}
-      campos={CAMPOS_ROLES}
-      columnas={COLUMNAS_ROLES}
-      clave={clavePor('rolescod')}
-      nombreRegistro="rol"
-      inicial={formularioInicial(CAMPOS_ROLES)}
-      etiquetaRegistro={(registro) => `el rol ${registro.rolescod}`}
-    />
-  );
-}
-
-/* PERMISOS */
-
-const CAMPOS_FUNCIONES = [
-  { nombre: 'fncod', etiqueta: 'Código de la función', tipo: 'text', requerido: true, maxLength: 255 },
-  { nombre: 'fndsc', etiqueta: 'Descripción', tipo: 'text', requerido: true, maxLength: 45 },
-  { nombre: 'fntyp', etiqueta: 'Tipo', tipo: 'text', requerido: true, maxLength: 3 },
-  { nombre: 'fnest', etiqueta: 'Estado', tipo: 'select', requerido: true, opciones: OPCIONES_ESTADO, valorInicial: 'ACT' },
-];
-
-const COLUMNAS_FUNCIONES = [
-  { titulo: 'Código', clave: 'fncod' },
-  { titulo: 'Descripción', clave: 'fndsc' },
-  { titulo: 'Tipo', clave: 'fntyp' },
-  { titulo: 'Estado', clave: 'fnest', formato: (valor) => <EtiquetaEstado valor={valor} /> },
-];
-
-const SERVICIO_FUNCIONES = {
-  listar: listarFunciones,
-  crear: crearFuncion,
-  actualizar: (clave, datos) => actualizarFuncion(clave.fncod, datos),
-  eliminar: (clave) => eliminarFuncion(clave.fncod),
-};
-
-const CAMPOS_ROLES_USUARIOS = [
-  { nombre: 'usercod', etiqueta: 'Usuario', tipo: 'select', requerido: true, opcionesKey: 'usercod' },
-  { nombre: 'rolescod', etiqueta: 'Rol', tipo: 'select', requerido: true, opcionesKey: 'rolescod' },
-  { nombre: 'roleuserest', etiqueta: 'Estado de la asignación', tipo: 'select', opciones: OPCIONES_ESTADO_ASIGNACION },
-  { nombre: 'roleuserfch', etiqueta: 'Fecha de asignación', tipo: 'datetime-local' },
-  { nombre: 'roleuserexp', etiqueta: 'Fecha de expiración', tipo: 'datetime-local' },
-];
-
-const COLUMNAS_ROLES_USUARIOS = [
-  { titulo: 'Usuario', clave: 'usuario' },
-  { titulo: 'Rol', clave: 'rol' },
-  { titulo: 'Estado', clave: 'roleuserest', formato: (valor) => <EtiquetaEstado valor={valor} /> },
-  { titulo: 'Asignado', clave: 'roleuserfch', formato: formatearFecha },
-  { titulo: 'Expira', clave: 'roleuserexp', formato: formatearFecha },
-];
-
-const SERVICIO_ROLES_USUARIOS = {
-  listar: listarRolesUsuarios,
-  crear: crearRolUsuario,
-  actualizar: (clave, datos) => actualizarRolUsuario(clave, datos),
-  eliminar: (clave) => eliminarRolUsuario(clave),
-};
-
-const claveRolUsuario = (registro) => ({ usercod: registro.usercod, rolescod: registro.rolescod });
-
-const cargarOpcionesRolesUsuarios = async () => {
-  const [usuarios, roles] = await Promise.all([listarUsuarios(), listarRoles()]);
-  return {
-    usercod: usuarios.map((usuario) => ({
-      valor: usuario.usercod,
-      etiqueta: `${usuario.username} · ${usuario.useremail}`,
-    })),
-    rolescod: roles.map((rol) => ({ valor: rol.rolescod, etiqueta: `${rol.rolescod} · ${rol.rolesdsc}` })),
-  };
-};
-
-const transformarRolesUsuarios = (registros, opciones) =>
-  (registros || []).map((registro) => ({
-    ...registro,
-    usuario: textoOpcion(opciones.usercod, registro.usercod),
-    rol: textoOpcion(opciones.rolescod, registro.rolescod),
-  }));
-
-const CAMPOS_FUNCIONES_ROLES = [
-  { nombre: 'rolescod', etiqueta: 'Rol', tipo: 'select', requerido: true, opcionesKey: 'rolescod' },
-  { nombre: 'fncod', etiqueta: 'Función', tipo: 'select', requerido: true, opcionesKey: 'fncod' },
-  { nombre: 'fnrolest', etiqueta: 'Estado de la asignación', tipo: 'select', opciones: OPCIONES_ESTADO_ASIGNACION },
-  { nombre: 'fnexp', etiqueta: 'Fecha de expiración', tipo: 'datetime-local' },
-];
-
-const COLUMNAS_FUNCIONES_ROLES = [
-  { titulo: 'Rol', clave: 'rol' },
-  { titulo: 'Función', clave: 'funcion' },
-  { titulo: 'Estado', clave: 'fnrolest', formato: (valor) => <EtiquetaEstado valor={valor} /> },
-  { titulo: 'Expira', clave: 'fnexp', formato: formatearFecha },
-];
-
-const SERVICIO_FUNCIONES_ROLES = {
-  listar: listarFuncionesRoles,
-  crear: crearFuncionRol,
-  actualizar: (clave, datos) => actualizarFuncionRol(clave, datos),
-  eliminar: (clave) => eliminarFuncionRol(clave),
-};
-
-const claveFuncionRol = (registro) => ({ rolescod: registro.rolescod, fncod: registro.fncod });
-
-const cargarOpcionesFuncionesRoles = async () => {
-  const [roles, funciones] = await Promise.all([listarRoles(), listarFunciones()]);
-  return {
-    rolescod: roles.map((rol) => ({ valor: rol.rolescod, etiqueta: `${rol.rolescod} · ${rol.rolesdsc}` })),
-    fncod: funciones.map((funcion) => ({
-      valor: funcion.fncod,
-      etiqueta: `${funcion.fncod} · ${funcion.fndsc}`,
-    })),
-  };
-};
-
-const transformarFuncionesRoles = (registros, opciones) =>
-  (registros || []).map((registro) => ({
-    ...registro,
-    rol: textoOpcion(opciones.rolescod, registro.rolescod),
-    funcion: textoOpcion(opciones.fncod, registro.fncod),
-  }));
-
-export function FuncionesModulo() {
-  return (
-    <CrudModulo
-      titulo="Funciones"
-      descripcion="Registra las acciones que pueden otorgarse a los roles."
-      servicio={SERVICIO_FUNCIONES}
-      campos={CAMPOS_FUNCIONES}
-      columnas={COLUMNAS_FUNCIONES}
-      clave={clavePor('fncod')}
-      nombreRegistro="función"
-      genero="femenino"
-      inicial={formularioInicial(CAMPOS_FUNCIONES)}
-      etiquetaRegistro={(registro) => `la función ${registro.fncod}`}
-    />
-  );
-}
-
-export function RolesUsuariosModulo() {
-  return (
-    <CrudModulo
-      titulo="Roles por usuario"
-      descripcion="Asigna roles a los usuarios y controla su vigencia."
-      servicio={SERVICIO_ROLES_USUARIOS}
-      campos={CAMPOS_ROLES_USUARIOS}
-      columnas={COLUMNAS_ROLES_USUARIOS}
-      clave={claveRolUsuario}
-      nombreRegistro="asignación"
-      genero="femenino"
-      inicial={formularioInicial(CAMPOS_ROLES_USUARIOS)}
-      cargarOpciones={cargarOpcionesRolesUsuarios}
-      transformar={transformarRolesUsuarios}
-      etiquetaRegistro={(registro) => `la asignación de ${registro.rolescod} al usuario ${registro.usercod}`}
-    />
-  );
-}
-
-export function FuncionesRolesModulo() {
-  return (
-    <CrudModulo
-      titulo="Funciones por rol"
-      descripcion="Asigna funciones a cada rol para construir los permisos del sistema."
-      servicio={SERVICIO_FUNCIONES_ROLES}
-      campos={CAMPOS_FUNCIONES_ROLES}
-      columnas={COLUMNAS_FUNCIONES_ROLES}
-      clave={claveFuncionRol}
-      nombreRegistro="asignación"
-      genero="femenino"
-      inicial={formularioInicial(CAMPOS_FUNCIONES_ROLES)}
-      cargarOpciones={cargarOpcionesFuncionesRoles}
-      transformar={transformarFuncionesRoles}
-      etiquetaRegistro={(registro) => `la asignación de ${registro.fncod} al rol ${registro.rolescod}`}
-    />
   );
 }
 

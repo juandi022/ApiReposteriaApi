@@ -125,48 +125,6 @@ export const obtenerPerfil = () => api('/perfil');
 
 export const cerrarSesion = () => api('/cerrarsesion', { method: 'POST' });
 
-/* ACCESO: usuarios y roles */
-
-export const listarUsuarios = () => apiModulo('/usuarios');
-export const obtenerUsuario = (id) => apiModulo(`/usuarios/usuario${construirQuery({ id })}`);
-export const crearUsuario = (datos) => apiModulo('/usuarios/guardar', { method: 'POST', body: datos });
-export const actualizarUsuario = (id, datos) =>
-  apiModulo(`/usuarios/actualizar${construirQuery({ id })}`, { method: 'PUT', body: datos });
-export const eliminarUsuario = (id) =>
-  apiModulo(`/usuarios/eliminar${construirQuery({ id })}`, { method: 'DELETE' });
-
-export const listarRoles = () => apiModulo('/roles');
-export const obtenerRol = (rolescod) => apiModulo(`/roles/rol${construirQuery({ rolescod })}`);
-export const crearRol = (datos) => apiModulo('/roles/guardar', { method: 'POST', body: datos });
-export const actualizarRol = (rolescod, datos) =>
-  apiModulo(`/roles/actualizar${construirQuery({ rolescod })}`, { method: 'PUT', body: datos });
-export const eliminarRol = (rolescod) =>
-  apiModulo(`/roles/eliminar${construirQuery({ rolescod })}`, { method: 'DELETE' });
-
-/* PERMISOS: funciones y asignaciones */
-
-export const listarFunciones = () => apiModulo('/funciones');
-export const obtenerFuncion = (fncod) => apiModulo(`/funciones/funcion${construirQuery({ fncod })}`);
-export const crearFuncion = (datos) => apiModulo('/funciones/guardar', { method: 'POST', body: datos });
-export const actualizarFuncion = (fncod, datos) =>
-  apiModulo(`/funciones/actualizar${construirQuery({ fncod })}`, { method: 'PUT', body: datos });
-export const eliminarFuncion = (fncod) =>
-  apiModulo(`/funciones/eliminar${construirQuery({ fncod })}`, { method: 'DELETE' });
-
-export const listarFuncionesRoles = () => apiModulo('/funciones-roles');
-export const crearFuncionRol = (datos) => apiModulo('/funciones-roles/guardar', { method: 'POST', body: datos });
-export const actualizarFuncionRol = (clave, datos) =>
-  apiModulo(`/funciones-roles/actualizar${construirQuery(clave)}`, { method: 'PUT', body: datos });
-export const eliminarFuncionRol = (clave) =>
-  apiModulo(`/funciones-roles/eliminar${construirQuery(clave)}`, { method: 'DELETE' });
-
-export const listarRolesUsuarios = () => apiModulo('/roles-usuarios');
-export const crearRolUsuario = (datos) => apiModulo('/roles-usuarios/guardar', { method: 'POST', body: datos });
-export const actualizarRolUsuario = (clave, datos) =>
-  apiModulo(`/roles-usuarios/actualizar${construirQuery(clave)}`, { method: 'PUT', body: datos });
-export const eliminarRolUsuario = (clave) =>
-  apiModulo(`/roles-usuarios/eliminar${construirQuery(clave)}`, { method: 'DELETE' });
-
 /* RED DE SUMINISTRO: proveedores */
 
 export const listarProveedores = (filtros = {}) =>

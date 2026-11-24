@@ -204,6 +204,10 @@ export default function App() {
     return (
       <main className="layout app-layout">
         <section className="tarjeta ancha panel-principal">
+  if (pantalla === 'inicio' && usuario) {
+    return (
+      <main className="layout">
+        <section className="tarjeta ancha">
           <Encabezado titulo="¡Bienvenido!" subtitulo="Tu sesión está activa" />
           <div className="perfil">
             <div><span>Usuario</span><strong>{usuario.username}</strong></div>

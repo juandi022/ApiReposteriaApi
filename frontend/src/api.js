@@ -23,6 +23,7 @@ const textoError = (item) => {
 };
 
 const extraerError = async (response, textos = mensajes) => {
+const extraerError = async (response) => {
   let data = {};
   try {
     data = await response.json();
@@ -46,6 +47,13 @@ const extraerError = async (response, textos = mensajes) => {
 
   return {
     message: data.error || data.mensaje || textos[response.status] || 'No se pudo completar la solicitud.',
+    return { message: mensajes[response.status] || 'No se pudo completar la solicitud.' };
+  }
+  if (Array.isArray(data.errors) && data.errors.length) {
+    return { message: data.errors.map((item) => item.msg).join(' '), data };
+  }
+  return {
+    message: data.error || mensajes[response.status] || 'No se pudo completar la solicitud.',
     data,
   };
 };
@@ -55,6 +63,7 @@ const extraerError = async (response, textos = mensajes) => {
  * /api/security para no alterar el flujo de autenticación existente.
  */
 export const api = async (path, { method = 'GET', body, token, base = BASE_SEGURIDAD, textos = mensajes } = {}) => {
+export const api = async (path, { method = 'GET', body, token } = {}) => {
   const headers = { Accept: 'application/json' };
   if (body) headers['Content-Type'] = 'application/json';
   const authToken = token === undefined ? getToken() : token;
@@ -63,6 +72,7 @@ export const api = async (path, { method = 'GET', body, token, base = BASE_SEGUR
   let response;
   try {
     response = await fetch(`${BASE}${base}${path}`, {
+    response = await fetch(`${BASE}/api/security${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -102,6 +112,10 @@ export const construirQuery = (parametros = {}) => {
 };
 
 /* Autenticación (convenciones de frontend-login) */
+
+  if (!response.ok) throw await extraerError(response);
+  return response.json();
+};
 
 export const iniciarSesion = (identificador, userpswd) => {
   const campo = identificador.includes('@') ? 'useremail' : 'username';

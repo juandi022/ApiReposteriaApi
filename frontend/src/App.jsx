@@ -10,9 +10,29 @@ import {
   registro,
   setToken,
 } from './api.js';
+import { ComprasModulo, ProveedoresModulo } from './Modulos.jsx';
 
 const esCorreo = (valor) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
 const contrasenaValida = (valor) => /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(valor);
+
+const GRUPOS_MODULOS = ['Abastecimiento', 'Red de suministro'];
+
+const MODULOS = [
+  {
+    id: 'compras',
+    grupo: 'Abastecimiento',
+    etiqueta: 'Compras',
+    descripcion: 'Facturas, productos y confirmación.',
+    componente: ComprasModulo,
+  },
+  {
+    id: 'proveedores',
+    grupo: 'Red de suministro',
+    etiqueta: 'Proveedores',
+    descripcion: 'Contactos y datos de abastecimiento.',
+    componente: ProveedoresModulo,
+  },
+];
 
 function Ojo({ visible }) {
   return (
@@ -178,6 +198,12 @@ export default function App() {
     return <main className="layout"><div className="cargando">Cargando…</div></main>;
   }
 
+  const modulo = MODULOS.find((item) => item.id === pantalla);
+
+  if (pantalla === 'inicio' && usuario) {
+    return (
+      <main className="layout app-layout">
+        <section className="tarjeta ancha panel-principal">
   if (pantalla === 'inicio' && usuario) {
     return (
       <main className="layout">
@@ -189,10 +215,64 @@ export default function App() {
             <div><span>Tipo</span><strong>{usuario.usertipo || 'PLB'}</strong></div>
           </div>
           {aviso && <p className="aviso">{aviso}</p>}
+          <nav className="modulos" aria-label="Módulos de la repostería">
+            {GRUPOS_MODULOS.map((grupo) => (
+              <div className="grupo-modulos" key={grupo}>
+                <h2>{grupo}</h2>
+                <div className="modulos-grid">
+                  {MODULOS.filter((item) => item.grupo === grupo).map((item) => (
+                    <button
+                      type="button"
+                      className="modulo-boton"
+                      key={item.id}
+                      onClick={() => ir(item.id)}
+                    >
+                      <strong>{item.etiqueta}</strong>
+                      <span>{item.descripcion}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
           <button className="boton primario" onClick={hacerLogout} disabled={cargando}>
             {cargando ? 'Cerrando…' : 'Cerrar sesión'}
           </button>
         </section>
+      </main>
+    );
+  }
+
+  if (modulo) {
+    if (!usuario) {
+      return (
+        <main className="layout">
+          <section className="tarjeta">
+            <Encabezado titulo="Sesión requerida" subtitulo="Inicia sesión para acceder a los módulos" />
+            <button type="button" className="boton primario" onClick={() => ir('login')}>
+              Ir a iniciar sesión
+            </button>
+          </section>
+        </main>
+      );
+    }
+
+    const ComponenteModulo = modulo.componente;
+    return (
+      <main className="layout app-layout modulo-layout">
+        <div className="barra-superior">
+          <button type="button" className="enlace" onClick={() => ir('inicio')}>
+            ← Volver al inicio
+          </button>
+          <button type="button" className="enlace" onClick={hacerLogout} disabled={cargando}>
+            {cargando ? 'Cerrando…' : 'Cerrar sesión'}
+          </button>
+        </div>
+        <div className="contenido-modulo">
+          {aviso && <p className="aviso">{aviso}</p>}
+          {error && <p className="error">{error}</p>}
+          <ComponenteModulo />
+        </div>
       </main>
     );
   }

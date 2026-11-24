@@ -1,5 +1,7 @@
 const BASE = import.meta.env.VITE_API_URL || '';
 const TOKEN_KEY = 'reposteria_token';
+const BASE_SEGURIDAD = '/api/security';
+const BASE_API = '/api';
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
@@ -15,11 +17,36 @@ const mensajes = {
   500: 'Ocurrió un problema en el servidor. Inténtalo más tarde.',
 };
 
+const textoError = (item) => {
+  if (typeof item === 'string') return item;
+  return item?.msg || item?.message || '';
+};
+
+const extraerError = async (response, textos = mensajes) => {
 const extraerError = async (response) => {
   let data = {};
   try {
     data = await response.json();
   } catch {
+    return { message: textos[response.status] || 'No se pudo completar la solicitud.' };
+  }
+
+  const detalles = Array.isArray(data.errors)
+    ? data.errors
+    : Array.isArray(data.errores)
+      ? data.errores
+      : [];
+
+  if (detalles.length) {
+    const mensajesDetalle = detalles.map(textoError).filter(Boolean);
+    return {
+      message: mensajesDetalle.join(' ') || textos[response.status] || 'No se pudo completar la solicitud.',
+      data,
+    };
+  }
+
+  return {
+    message: data.error || data.mensaje || textos[response.status] || 'No se pudo completar la solicitud.',
     return { message: mensajes[response.status] || 'No se pudo completar la solicitud.' };
   }
   if (Array.isArray(data.errors) && data.errors.length) {
@@ -31,6 +58,11 @@ const extraerError = async (response) => {
   };
 };
 
+/**
+ * Cliente único para todas las peticiones. El prefijo por omisión sigue siendo
+ * /api/security para no alterar el flujo de autenticación existente.
+ */
+export const api = async (path, { method = 'GET', body, token, base = BASE_SEGURIDAD, textos = mensajes } = {}) => {
 export const api = async (path, { method = 'GET', body, token } = {}) => {
   const headers = { Accept: 'application/json' };
   if (body) headers['Content-Type'] = 'application/json';
@@ -39,6 +71,7 @@ export const api = async (path, { method = 'GET', body, token } = {}) => {
 
   let response;
   try {
+    response = await fetch(`${BASE}${base}${path}`, {
     response = await fetch(`${BASE}/api/security${path}`, {
       method,
       headers,
@@ -47,6 +80,38 @@ export const api = async (path, { method = 'GET', body, token } = {}) => {
   } catch {
     throw new Error('No se pudo conectar con el servidor. Verifica que el backend esté encendido.');
   }
+
+  if (!response.ok) throw await extraerError(response, textos);
+  if (response.status === 204) return null;
+
+  const texto = await response.text();
+  if (!texto) return null;
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return texto;
+  }
+};
+
+const textosModulo = {
+  ...mensajes,
+  403: 'No tienes permiso para realizar esta operación.',
+  409: 'El registro ya existe o no cumple una regla de negocio.',
+};
+
+const apiModulo = (path, opciones = {}) =>
+  api(path, { ...opciones, base: BASE_API, textos: textosModulo });
+
+export const construirQuery = (parametros = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(parametros).forEach(([clave, valor]) => {
+    if (valor !== undefined && valor !== null && valor !== '') query.append(clave, String(valor));
+  });
+  const texto = query.toString();
+  return texto ? `?${texto}` : '';
+};
+
+/* Autenticación (convenciones de frontend-login) */
 
   if (!response.ok) throw await extraerError(response);
   return response.json();
@@ -73,3 +138,33 @@ export const actualizarContrasena = (username, useremail, pin, userpswdNueva) =>
 export const obtenerPerfil = () => api('/perfil');
 
 export const cerrarSesion = () => api('/cerrarsesion', { method: 'POST' });
+
+/* RED DE SUMINISTRO: proveedores */
+
+export const listarProveedores = (filtros = {}) =>
+  apiModulo(`/proveedores${construirQuery(filtros)}`);
+export const crearProveedor = (datos) => apiModulo('/proveedores/guardar', { method: 'POST', body: datos });
+export const actualizarProveedor = (id, datos) =>
+  apiModulo(`/proveedores/actualizar${construirQuery({ id })}`, { method: 'PUT', body: datos });
+export const eliminarProveedor = (id) =>
+  apiModulo(`/proveedores/eliminar${construirQuery({ id })}`, { method: 'DELETE' });
+
+/* ABASTECIMIENTO: compras y sus detalles */
+
+export const listarCompras = (filtros = {}) => apiModulo(`/compras${construirQuery(filtros)}`);
+export const obtenerCompra = (id) => apiModulo(`/compras/compra${construirQuery({ id })}`);
+export const crearCompra = (datos) => apiModulo('/compras/guardar', { method: 'POST', body: datos });
+export const actualizarCompra = (id, datos) =>
+  apiModulo(`/compras/actualizar${construirQuery({ id })}`, { method: 'PUT', body: datos });
+export const eliminarCompra = (id) =>
+  apiModulo(`/compras/eliminar${construirQuery({ id })}`, { method: 'DELETE' });
+export const agregarDetalleCompra = (id, datos) =>
+  apiModulo(`/compras/detalle/guardar${construirQuery({ id })}`, { method: 'POST', body: datos });
+export const eliminarDetalleCompra = (id, idDetalle) =>
+  apiModulo(`/compras/detalle/eliminar${construirQuery({ id, id_detalle: idDetalle })}`, { method: 'DELETE' });
+export const confirmarCompra = (id) =>
+  apiModulo(`/compras/confirmar${construirQuery({ id })}`, { method: 'PUT' });
+
+/* Catálogo: solo se usa para elegir productos al registrar una compra. */
+
+export const listarProductos = () => apiModulo('/catalogo');

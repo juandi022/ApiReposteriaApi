@@ -1,0 +1,269 @@
+:root {
+  --negro: #000000;
+  --blanco: #ffffff;
+  --gris-claro: #e6e6e6;
+  --gris: #bebebe;
+  --gris-medio: #999999;
+  --cafe-oscuro: #4a362f;
+  --cafe: #6a452a;
+  --cafe-acento: #8a4d2e;
+  --caramelo: #b76e41;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--cafe-oscuro);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(145deg, var(--gris-claro) 0%, var(--blanco) 45%, #f3e8df 100%);
+}
+
+.layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 430px;
+  background: var(--blanco);
+  border: 1px solid var(--gris);
+  border-radius: 18px;
+  padding: 38px 36px 32px;
+  box-shadow: 0 18px 45px rgba(74, 54, 47, 0.14);
+}
+
+.tarjeta.ancha {
+  max-width: 500px;
+}
+
+.encabezado {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--cafe);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.marca-icono {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--cafe-acento);
+  color: var(--blanco);
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.encabezado h1 {
+  margin: 16px 0 6px;
+  font-size: 27px;
+  color: var(--cafe-oscuro);
+}
+
+.encabezado p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gris-medio);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  margin: 14px 0 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cafe-oscuro);
+}
+
+input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--gris);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--negro);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input::placeholder {
+  color: var(--gris-medio);
+}
+
+input:focus {
+  border-color: var(--cafe-acento);
+  box-shadow: 0 0 0 3px rgba(138, 77, 46, 0.16);
+}
+
+.input-wrap {
+  position: relative;
+}
+
+.input-wrap input {
+  padding-right: 48px;
+}
+
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gris-medio);
+  cursor: pointer;
+}
+
+.toggle-password:hover {
+  color: var(--cafe-acento);
+  background: #f6ede6;
+}
+
+.boton {
+  height: 48px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.boton:active {
+  transform: translateY(1px);
+}
+
+.boton.primario {
+  margin-top: 22px;
+  background: var(--cafe-acento);
+  color: var(--blanco);
+}
+
+.boton.primario:hover:not(:disabled) {
+  background: var(--cafe);
+}
+
+.boton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.enlace {
+  align-self: flex-start;
+  margin-top: 13px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cafe-acento);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.enlace:hover {
+  color: var(--cafe);
+  text-decoration: underline;
+}
+
+.enlace.volver {
+  margin-top: 18px;
+}
+
+.pie {
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--gris-medio);
+}
+
+.pie .enlace {
+  margin: 0;
+  font-size: 13px;
+}
+
+.aviso,
+.error {
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.aviso {
+  background: #f6ede6;
+  border-left: 4px solid var(--caramelo);
+  color: var(--cafe);
+}
+
+.error {
+  background: #f8eeee;
+  border-left: 4px solid var(--cafe-oscuro);
+  color: var(--cafe-oscuro);
+}
+
+.perfil {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.perfil div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--gris-claro);
+  border-radius: 10px;
+  background: #fcfaf8;
+}
+
+.perfil span {
+  color: var(--gris-medio);
+  font-size: 13px;
+}
+
+.perfil strong {
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.cargando {
+  color: var(--cafe);
+  font-size: 16px;
+}
+
+@media (max-width: 480px) {
+  .tarjeta {
+    padding: 28px 22px 24px;
+  }
+}

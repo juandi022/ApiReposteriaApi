@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent, type ComponentType, type FormEvent } from 'react';
 import {
   actualizarContrasena,
   cerrarSesion,
@@ -6,18 +6,31 @@ import {
   enviarPin,
   getToken,
   iniciarSesion,
+  mensajeError,
   obtenerPerfil,
   registro,
   setToken,
-} from './api.js';
-import { ComprasModulo, ProveedoresModulo } from './Modulos.jsx';
+  type Usuario,
+} from './api';
+import { ComprasModulo, ProveedoresModulo } from './Modulos';
 
-const esCorreo = (valor) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
-const contrasenaValida = (valor) => /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(valor);
+type Pantalla = 'login' | 'registro' | 'recuperacion' | 'pin' | 'inicio' | 'compras' | 'proveedores';
 
-const GRUPOS_MODULOS = ['Abastecimiento', 'Red de suministro'];
+interface Modulo {
+  id: 'compras' | 'proveedores';
+  grupo: string;
+  etiqueta: string;
+  descripcion: string;
+  componente: ComponentType;
+}
 
-const MODULOS = [
+const esCorreo = (valor: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+const contrasenaValida = (valor: string): boolean =>
+  /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(valor);
+
+const GRUPOS_MODULOS = ['Abastecimiento', 'Red de suministro'] as const;
+
+const MODULOS: Modulo[] = [
   {
     id: 'compras',
     grupo: 'Abastecimiento',
@@ -34,7 +47,7 @@ const MODULOS = [
   },
 ];
 
-function Ojo({ visible }) {
+function Ojo({ visible }: { visible: boolean }) {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z" />
@@ -44,7 +57,16 @@ function Ojo({ visible }) {
   );
 }
 
-function CampoPassword({ id, name, value, onChange, placeholder, autoComplete }) {
+interface CampoPasswordProps {
+  id: string;
+  name: string;
+  value: string;
+  onChange: (evento: ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  autoComplete: string;
+}
+
+function CampoPassword({ id, name, value, onChange, placeholder, autoComplete }: CampoPasswordProps) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="input-wrap">
@@ -71,7 +93,7 @@ function CampoPassword({ id, name, value, onChange, placeholder, autoComplete })
   );
 }
 
-function Encabezado({ titulo, subtitulo }) {
+function Encabezado({ titulo, subtitulo }: { titulo: string; subtitulo: string }) {
   return (
     <header className="encabezado">
       <div className="marca" aria-label="Repostería">
@@ -85,8 +107,8 @@ function Encabezado({ titulo, subtitulo }) {
 }
 
 export default function App() {
-  const [pantalla, setPantalla] = useState('login');
-  const [usuario, setUsuario] = useState(null);
+  const [pantalla, setPantalla] = useState<Pantalla>('login');
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -103,18 +125,18 @@ export default function App() {
       return;
     }
     obtenerPerfil()
-      .then((data) => setUsuario(data.usuario || null))
+      .then((data) => setUsuario(data.usuario ?? null))
       .catch(() => clearToken())
       .finally(() => setVerificando(false));
   }, []);
 
-  const ir = (destino, mensaje = '') => {
+  const ir = (destino: Pantalla, mensaje = '') => {
     setError('');
     setAviso(mensaje);
     setPantalla(destino);
   };
 
-  const enviar = async (event, accion) => {
+  const enviar = async (event: FormEvent<HTMLFormElement>, accion: () => Promise<void>) => {
     event.preventDefault();
     setError('');
     setAviso('');
@@ -122,13 +144,13 @@ export default function App() {
     try {
       await accion();
     } catch (err) {
-      setError(err.message);
+      setError(mensajeError(err));
     } finally {
       setCargando(false);
     }
   };
 
-  const hacerLogin = (event) =>
+  const hacerLogin = (event: FormEvent<HTMLFormElement>) =>
     enviar(event, async () => {
       const { identificador, userpswd } = login;
       if (!identificador.trim() || !userpswd) throw new Error('Ingresa tu usuario y contraseña.');
@@ -140,7 +162,7 @@ export default function App() {
       setPantalla('inicio');
     });
 
-  const hacerRegistro = (event) =>
+  const hacerRegistro = (event: FormEvent<HTMLFormElement>) =>
     enviar(event, async () => {
       const { useremail, username, userpswd, confirmar } = registroForm;
       if (!esCorreo(useremail.trim())) throw new Error('Ingresa un correo electrónico válido.');
@@ -154,7 +176,7 @@ export default function App() {
       ir('login', 'Cuenta creada correctamente. Ya puedes iniciar sesión.');
     });
 
-  const hacerRecuperacion = (event) =>
+  const hacerRecuperacion = (event: FormEvent<HTMLFormElement>) =>
     enviar(event, async () => {
       const { username, useremail } = recuperacion;
       if (username.trim().length < 3) throw new Error('El usuario debe tener al menos 3 caracteres.');
@@ -164,7 +186,7 @@ export default function App() {
       ir('pin', 'Enviamos un PIN de 4 dígitos a tu correo.');
     });
 
-  const hacerCambioContrasena = (event) =>
+  const hacerCambioContrasena = (event: FormEvent<HTMLFormElement>) =>
     enviar(event, async () => {
       const { pin, userpswdNueva, confirmar } = pinForm;
       if (!/^\d{4}$/.test(pin)) throw new Error('El PIN debe tener 4 dígitos.');
@@ -176,7 +198,7 @@ export default function App() {
         recuperacion.username.trim(),
         recuperacion.useremail.trim(),
         pin,
-        userpswdNueva
+        userpswdNueva,
       );
       ir('login', 'Contraseña actualizada. Ingresa con tu nueva contraseña.');
     });

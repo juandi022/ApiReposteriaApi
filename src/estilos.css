@@ -198,6 +198,7 @@ textarea:focus {
   color: var(--cafe-acento);
   font-size: 13px;
   font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -317,6 +318,7 @@ textarea:focus {
   background: #fcfaf8;
   color: var(--cafe-oscuro);
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s, transform 0.1s;
 }

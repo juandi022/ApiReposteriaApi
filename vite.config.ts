@@ -14,5 +14,15 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true, // Abre el navegador automáticamente al iniciar
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      '/img': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
 })

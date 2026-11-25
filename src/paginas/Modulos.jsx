@@ -1,12 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   actualizarCompra,
   actualizarProveedor,
@@ -20,114 +12,28 @@ import {
   listarCompras,
   listarProductos,
   listarProveedores,
-  mensajeError,
   obtenerCompra,
-  type Compra,
-  type Cuerpo,
-  type DetalleCompra,
-  type Filtros,
-  type Producto,
-  type Proveedor,
-} from './api';
+} from '../api.js';
 
-type EventoCampo = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
-
-interface Opcion {
-  valor: string | number;
-  etiqueta: string;
-}
-
-interface DefinicionCampo {
-  nombre: string;
-  etiqueta: string;
-  tipo?: string;
-  requerido?: boolean;
-  maxLength?: number;
-  min?: number | string;
-  step?: number | string;
-  placeholder?: string;
-  autoComplete?: string;
-  ayuda?: string;
-  opciones?: Opcion[];
-  opcionesKey?: string;
-  valorInicial?: string;
-  auto?: boolean;
-  soloCrear?: boolean;
-  soloEdicion?: boolean;
-}
-
-interface ClaveRegistro {
-  [clave: string]: unknown;
-  id?: unknown;
-}
-
-interface Servicio<T> {
-  listar: (filtros: Filtros) => Promise<T[]>;
-  crear: (datos: Cuerpo) => Promise<unknown>;
-  actualizar: (clave: ClaveRegistro, datos: Cuerpo) => Promise<unknown>;
-  eliminar: (clave: ClaveRegistro) => Promise<unknown>;
-}
-
-interface Columna<T> {
-  titulo: string;
-  clave: keyof T | ((registro: T) => unknown);
-  formato?: (valor: unknown, registro: T) => ReactNode;
-}
-
-interface Accion<T> {
-  etiqueta: string;
-  ejecutar?: (registro: T) => Promise<unknown>;
-  confirmar?: (registro: T) => string;
-  visible?: (registro: T) => boolean;
-}
-
-interface CrudModuloProps<T extends object> {
-  titulo: string;
-  descripcion: string;
-  servicio: Servicio<T>;
-  campos: DefinicionCampo[];
-  columnas: Columna<T>[];
-  clave: (registro: T) => ClaveRegistro;
-  nombreRegistro?: string;
-  genero?: 'masculino' | 'femenino';
-  inicial?: Record<string, string>;
-  filtros?: DefinicionCampo[];
-  acciones?: Accion<T>[];
-  cargarOpciones?: () => Promise<Record<string, Opcion[]>>;
-  transformar?: (registros: T[], opciones: Record<string, Opcion[]>) => T[];
-  puedeEditar?: (registro: T) => boolean;
-  puedeEliminar?: (registro: T) => boolean;
-  etiquetaRegistro?: (registro: T) => string;
-  refresco?: number;
-}
-
-const opcionesDe = (...valores: Array<string | number>): Opcion[] =>
-  valores.map((valor) => ({ valor, etiqueta: String(valor) }));
+const opcionesDe = (...valores) => valores.map((valor) => ({ valor, etiqueta: valor }));
 
 const OPCIONES_ESTADO_PROVEEDOR = opcionesDe('Activo', 'Inactivo');
 const OPCIONES_ESTADO_COMPRA = opcionesDe('Borrador', 'Confirmada', 'Anulada');
 
-const clavePor = <T extends object>(nombre: keyof T) => (registro: T): ClaveRegistro => ({
-  [String(nombre)]: registro[nombre],
-});
+const clavePor = (nombre) => (registro) => ({ [nombre]: registro[nombre] });
 
-const valorDe = (registro: unknown, nombre: string): unknown =>
-  typeof registro === 'object' && registro !== null
-    ? (registro as Record<string, unknown>)[nombre]
-    : undefined;
+const formularioInicial = (campos) =>
+  Object.fromEntries(campos.map((campo) => [campo.nombre, campo.valorInicial ?? '']));
 
-const formularioInicial = (campos: DefinicionCampo[]): Record<string, string> =>
-  Object.fromEntries(campos.map((campo) => [campo.nombre, campo.valorInicial ?? ''])) as Record<string, string>;
-
-const textoOpcion = (opciones: Opcion[] = [], valor: unknown): string => {
+const textoOpcion = (opciones = [], valor) => {
   if (valor === undefined || valor === null || valor === '') return '—';
   const encontrada = opciones.find((opcion) => String(opcion.valor) === String(valor));
   return encontrada?.etiqueta || String(valor);
 };
 
-const formatearFecha = (valor: unknown): string => {
+const formatearFecha = (valor) => {
   if (!valor) return '—';
-  const fecha = new Date(String(valor));
+  const fecha = new Date(valor);
   if (Number.isNaN(fecha.getTime())) return String(valor);
   return new Intl.DateTimeFormat('es-HN', {
     year: 'numeric',
@@ -136,10 +42,10 @@ const formatearFecha = (valor: unknown): string => {
   }).format(fecha);
 };
 
-const normalizarValor = (definicion: DefinicionCampo, valor: unknown): string => {
+const normalizarValor = (definicion, valor) => {
   if (valor === undefined || valor === null) return '';
   if (definicion.tipo === 'datetime-local') {
-    const fecha = new Date(String(valor));
+    const fecha = new Date(valor);
     if (!Number.isNaN(fecha.getTime())) {
       const local = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000);
       return local.toISOString().slice(0, 16);
@@ -149,7 +55,7 @@ const normalizarValor = (definicion: DefinicionCampo, valor: unknown): string =>
   return String(valor);
 };
 
-const prepararValor = (definicion: DefinicionCampo, valor: string): unknown => {
+const prepararValor = (definicion, valor) => {
   if (valor === undefined || valor === null || valor === '') return undefined;
   if (definicion.tipo === 'number') return Number(valor);
   if (definicion.tipo === 'datetime-local') {
@@ -159,49 +65,29 @@ const prepararValor = (definicion: DefinicionCampo, valor: string): unknown => {
   return valor;
 };
 
-const prepararCuerpo = (
-  campos: DefinicionCampo[],
-  formulario: Record<string, string>,
-  { crear }: { crear: boolean },
-): Cuerpo => {
-  const cuerpo: Cuerpo = {};
+const prepararCuerpo = (campos, formulario, { crear }) => {
+  const cuerpo = {};
   campos.forEach((campo) => {
     if (campo.auto || (crear && campo.soloEdicion) || (!crear && campo.soloCrear)) return;
-    const valor = prepararValor(campo, formulario[campo.nombre] ?? '');
+    const valor = prepararValor(campo, formulario[campo.nombre]);
     if (valor !== undefined) cuerpo[campo.nombre] = valor;
   });
   return cuerpo;
 };
 
-function EtiquetaEstado({ valor }: { valor: unknown }) {
+function EtiquetaEstado({ valor }) {
   if (!valor) return <span className="estado neutro">—</span>;
-  const activo = ['ACT', 'Activo', 'Borrador'].includes(String(valor));
-  return <span className={`estado ${activo ? 'activo' : 'inactivo'}`}>{String(valor)}</span>;
+  const activo = ['ACT', 'Activo', 'Borrador'].includes(valor);
+  return <span className={`estado ${activo ? 'activo' : 'inactivo'}`}>{valor}</span>;
 }
 
-interface CampoFormularioProps {
-  definicion: DefinicionCampo;
-  valor: string;
-  onChange: (nombre: string, valor: string) => void;
-  opciones?: Opcion[];
-  deshabilitado?: boolean;
-  prefijo?: string;
-}
-
-function CampoFormulario({
-  definicion,
-  valor,
-  onChange,
-  opciones = [],
-  deshabilitado = false,
-  prefijo = 'campo',
-}: CampoFormularioProps) {
+function CampoFormulario({ definicion, valor, onChange, opciones = [], deshabilitado = false, prefijo = 'campo' }) {
   const id = `${prefijo}-${definicion.nombre}`;
   const comun = {
     id,
     name: definicion.nombre,
     value: valor,
-    onChange: (evento: EventoCampo) => onChange(definicion.nombre, evento.target.value),
+    onChange: (evento) => onChange(definicion.nombre, evento.target.value),
     disabled: deshabilitado,
     required: Boolean(definicion.requerido) && !deshabilitado,
     maxLength: definicion.maxLength,
@@ -233,7 +119,7 @@ function CampoFormulario({
   );
 }
 
-function CrudModulo<T extends object>({
+function CrudModulo({
   titulo,
   descripcion,
   servicio,
@@ -251,35 +137,33 @@ function CrudModulo<T extends object>({
   puedeEliminar,
   etiquetaRegistro,
   refresco = 0,
-}: CrudModuloProps<T>) {
-  const valoresFiltroIniciales = useMemo<Record<string, string>>(
-    () => Object.fromEntries(filtros.map((filtro) => [filtro.nombre, filtro.valorInicial ?? ''])) as Record<string, string>,
+}) {
+  const valoresFiltroIniciales = useMemo(
+    () => Object.fromEntries(filtros.map((filtro) => [filtro.nombre, filtro.valorInicial ?? ''])),
     [filtros],
   );
-  const [filtrosActuales, setFiltrosActuales] = useState<Record<string, string>>(valoresFiltroIniciales);
-  const [registros, setRegistros] = useState<T[]>([]);
-  const [opciones, setOpciones] = useState<Record<string, Opcion[]>>({});
-  const [formulario, setFormulario] = useState<Record<string, string>>(
-    () => inicial ?? formularioInicial(campos),
-  );
-  const [editando, setEditando] = useState<ClaveRegistro | null>(null);
+  const [filtrosActuales, setFiltrosActuales] = useState(valoresFiltroIniciales);
+  const [registros, setRegistros] = useState([]);
+  const [opciones, setOpciones] = useState({});
+  const [formulario, setFormulario] = useState(inicial ?? formularioInicial(campos));
+  const [editando, setEditando] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
 
   const cargar = useCallback(
-    async (parametros: Filtros = {}) => {
+    async (parametros) => {
       setCargando(true);
       setError('');
       try {
-        const respuesta = await servicio.listar(parametros);
+        const respuesta = await servicio.listar(parametros || {});
         const opcionesRespuesta = cargarOpciones ? await cargarOpciones() : {};
         const lista = transformar ? transformar(respuesta, opcionesRespuesta) : respuesta;
         setRegistros(Array.isArray(lista) ? lista : []);
-        setOpciones(opcionesRespuesta);
+        setOpciones(opcionesRespuesta || {});
       } catch (err) {
-        setError(mensajeError(err));
+        setError(err.message);
         setRegistros([]);
       } finally {
         setCargando(false);
@@ -289,11 +173,10 @@ function CrudModulo<T extends object>({
   );
 
   useEffect(() => {
-    void cargar(filtrosActuales);
+    cargar(filtrosActuales);
   }, [cargar, filtrosActuales, refresco]);
 
-  const cambiarCampo = (nombre: string, valor: string) =>
-    setFormulario((actual) => ({ ...actual, [nombre]: valor }));
+  const cambiarCampo = (nombre, valor) => setFormulario((actual) => ({ ...actual, [nombre]: valor }));
 
   const nuevo = () => {
     setEditando(null);
@@ -302,21 +185,21 @@ function CrudModulo<T extends object>({
     setAviso('');
   };
 
-  const editar = (registro: T) => {
+  const editar = (registro) => {
     setEditando(clave(registro));
     setFormulario(
       Object.fromEntries(
         campos.map((campo) => [
           campo.nombre,
-          campo.soloCrear ? '' : normalizarValor(campo, valorDe(registro, campo.nombre)),
+          campo.soloCrear ? '' : normalizarValor(campo, registro[campo.nombre]),
         ]),
-      ) as Record<string, string>,
+      ),
     );
     setError('');
     setAviso('');
   };
 
-  const guardar = async (evento: FormEvent<HTMLFormElement>) => {
+  const guardar = async (evento) => {
     evento.preventDefault();
     setProcesando(true);
     setError('');
@@ -330,14 +213,14 @@ function CrudModulo<T extends object>({
       setEditando(null);
       await cargar(filtrosActuales);
     } catch (err) {
-      setError(mensajeError(err));
+      setError(err.message);
     } finally {
       setProcesando(false);
     }
   };
 
-  const eliminar = async (registro: T) => {
-    const nombre = etiquetaRegistro?.(registro) ?? nombreRegistro;
+  const eliminar = async (registro) => {
+    const nombre = etiquetaRegistro ? etiquetaRegistro(registro) : nombreRegistro;
     if (!window.confirm(`¿Eliminar ${nombre}? Esta acción no se puede deshacer.`)) return;
     setProcesando(true);
     setError('');
@@ -349,13 +232,13 @@ function CrudModulo<T extends object>({
       setAviso('Registro eliminado correctamente.');
       await cargar(filtrosActuales);
     } catch (err) {
-      setError(mensajeError(err));
+      setError(err.message);
     } finally {
       setProcesando(false);
     }
   };
 
-  const ejecutarAccion = async (accion: Accion<T>, registro: T) => {
+  const ejecutarAccion = async (accion, registro) => {
     if (accion.confirmar && !window.confirm(accion.confirmar(registro))) return;
     if (!accion.ejecutar) return;
     setProcesando(true);
@@ -366,15 +249,14 @@ function CrudModulo<T extends object>({
       if (typeof mensaje === 'string') setAviso(mensaje);
       await cargar(filtrosActuales);
     } catch (err) {
-      setError(mensajeError(err));
+      setError(err.message);
     } finally {
       setProcesando(false);
     }
   };
 
-  const valorCelda = (columna: Columna<T>, registro: T): ReactNode => {
-    const valor =
-      typeof columna.clave === 'function' ? columna.clave(registro) : valorDe(registro, String(columna.clave));
+  const valorCelda = (columna, registro) => {
+    const valor = typeof columna.clave === 'function' ? columna.clave(registro) : registro[columna.clave];
     if (columna.formato) return columna.formato(valor, registro);
     return valor === undefined || valor === null || valor === '' ? '—' : String(valor);
   };
@@ -402,7 +284,7 @@ function CrudModulo<T extends object>({
               prefijo={`filtro-${filtro.nombre}`}
               definicion={{ ...filtro, requerido: false }}
               valor={filtrosActuales[filtro.nombre] ?? ''}
-              opciones={filtro.opcionesKey ? opciones[filtro.opcionesKey] ?? [] : filtro.opciones ?? []}
+              opciones={opciones[filtro.opcionesKey] ?? filtro.opciones ?? []}
               onChange={(nombre, valor) =>
                 setFiltrosActuales((actual) => ({ ...actual, [nombre]: valor }))
               }
@@ -434,51 +316,48 @@ function CrudModulo<T extends object>({
             ) : registros.length === 0 ? (
               <tr><td colSpan={columnas.length + 1} className="fila-vacia">No hay registros para mostrar.</td></tr>
             ) : (
-              registros.map((registro, indice) => {
-                const id = clave(registro);
-                return (
-                  <tr key={Object.values(id).join('-') || indice}>
-                    {columnas.map((columna) => (
-                      <td key={columna.titulo}>{valorCelda(columna, registro)}</td>
-                    ))}
-                    <td className="acciones-tabla">
-                      {acciones
-                        .filter((accion) => !accion.visible || accion.visible(registro))
-                        .map((accion) => (
-                          <button
-                            key={accion.etiqueta}
-                            type="button"
-                            className="boton enlinea"
-                            disabled={procesando}
-                            onClick={() => void ejecutarAccion(accion, registro)}
-                          >
-                            {accion.etiqueta}
-                          </button>
-                        ))}
-                      {(!puedeEditar || puedeEditar(registro)) && (
+              registros.map((registro, indice) => (
+                <tr key={clave(registro) && Object.values(clave(registro)).join('-') || indice}>
+                  {columnas.map((columna) => (
+                    <td key={columna.titulo}>{valorCelda(columna, registro)}</td>
+                  ))}
+                  <td className="acciones-tabla">
+                    {acciones
+                      .filter((accion) => !accion.visible || accion.visible(registro))
+                      .map((accion) => (
                         <button
+                          key={accion.etiqueta}
                           type="button"
                           className="boton enlinea"
                           disabled={procesando}
-                          onClick={() => editar(registro)}
+                          onClick={() => ejecutarAccion(accion, registro)}
                         >
-                          Editar
+                          {accion.etiqueta}
                         </button>
-                      )}
-                      {(!puedeEliminar || puedeEliminar(registro)) && (
-                        <button
-                          type="button"
-                          className="boton enlinea peligro"
-                          disabled={procesando}
-                          onClick={() => void eliminar(registro)}
-                        >
-                          Eliminar
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
+                      ))}
+                    {(!puedeEditar || puedeEditar(registro)) && (
+                      <button
+                        type="button"
+                        className="boton enlinea"
+                        disabled={procesando}
+                        onClick={() => editar(registro)}
+                      >
+                        Editar
+                      </button>
+                    )}
+                    {(!puedeEliminar || puedeEliminar(registro)) && (
+                      <button
+                        type="button"
+                        className="boton enlinea peligro"
+                        disabled={procesando}
+                        onClick={() => eliminar(registro)}
+                      >
+                        Eliminar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
@@ -498,7 +377,7 @@ function CrudModulo<T extends object>({
                 key={campo.nombre}
                 definicion={campo}
                 valor={formulario[campo.nombre] ?? ''}
-                opciones={campo.opcionesKey ? opciones[campo.opcionesKey] ?? [] : campo.opciones ?? []}
+                opciones={opciones[campo.opcionesKey] ?? campo.opciones ?? []}
                 onChange={cambiarCampo}
               />
             ))}
@@ -520,26 +399,20 @@ function CrudModulo<T extends object>({
 
 /* RED DE SUMINISTRO */
 
-const CAMPOS_PROVEEDORES: DefinicionCampo[] = [
+const CAMPOS_PROVEEDORES = [
   { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'text', requerido: true, maxLength: 120 },
   { nombre: 'contacto', etiqueta: 'Contacto', tipo: 'text', maxLength: 120 },
   { nombre: 'telefono', etiqueta: 'Teléfono', tipo: 'text', maxLength: 20 },
   { nombre: 'correo', etiqueta: 'Correo electrónico', tipo: 'email', maxLength: 120 },
   { nombre: 'direccion', etiqueta: 'Dirección', tipo: 'text', maxLength: 255 },
-  {
-    nombre: 'estado',
-    etiqueta: 'Estado',
-    tipo: 'select',
-    opciones: OPCIONES_ESTADO_PROVEEDOR,
-    valorInicial: 'Activo',
-  },
+  { nombre: 'estado', etiqueta: 'Estado', tipo: 'select', opciones: OPCIONES_ESTADO_PROVEEDOR, valorInicial: 'Activo' },
 ];
 
-const FILTROS_PROVEEDORES: DefinicionCampo[] = [
+const FILTROS_PROVEEDORES = [
   { nombre: 'estado', etiqueta: 'Estado', tipo: 'select', opciones: OPCIONES_ESTADO_PROVEEDOR },
 ];
 
-const COLUMNAS_PROVEEDORES: Columna<Proveedor>[] = [
+const COLUMNAS_PROVEEDORES = [
   { titulo: 'ID', clave: 'id_proveedor' },
   { titulo: 'Nombre', clave: 'nombre' },
   { titulo: 'Contacto', clave: 'contacto' },
@@ -549,7 +422,7 @@ const COLUMNAS_PROVEEDORES: Columna<Proveedor>[] = [
   { titulo: 'Estado', clave: 'estado', formato: (valor) => <EtiquetaEstado valor={valor} /> },
 ];
 
-const SERVICIO_PROVEEDORES: Servicio<Proveedor> = {
+const SERVICIO_PROVEEDORES = {
   listar: listarProveedores,
   crear: crearProveedor,
   actualizar: (clave, datos) => actualizarProveedor(clave.id, datos),
@@ -575,7 +448,7 @@ export function ProveedoresModulo() {
 
 /* ABASTECIMIENTO */
 
-const CAMPOS_COMPRAS: DefinicionCampo[] = [
+const CAMPOS_COMPRAS = [
   {
     nombre: 'id_proveedor',
     etiqueta: 'Proveedor',
@@ -593,12 +466,12 @@ const CAMPOS_COMPRAS: DefinicionCampo[] = [
   },
 ];
 
-const FILTROS_COMPRAS: DefinicionCampo[] = [
+const FILTROS_COMPRAS = [
   { nombre: 'estado', etiqueta: 'Estado', tipo: 'select', opciones: OPCIONES_ESTADO_COMPRA },
   { nombre: 'id_proveedor', etiqueta: 'Proveedor', tipo: 'select', opcionesKey: 'id_proveedor' },
 ];
 
-const COLUMNAS_COMPRAS: Columna<Compra>[] = [
+const COLUMNAS_COMPRAS = [
   { titulo: 'ID', clave: 'id_compra' },
   { titulo: 'Proveedor', clave: 'proveedorNombre' },
   { titulo: 'Factura', clave: 'numero_factura' },
@@ -607,37 +480,34 @@ const COLUMNAS_COMPRAS: Columna<Compra>[] = [
   { titulo: 'Estado', clave: 'estado', formato: (valor) => <EtiquetaEstado valor={valor} /> },
 ];
 
-const SERVICIO_COMPRAS: Servicio<Compra> = {
+const SERVICIO_COMPRAS = {
   listar: listarCompras,
   crear: crearCompra,
   actualizar: (clave, datos) => actualizarCompra(clave.id, datos),
   eliminar: (clave) => eliminarCompra(clave.id),
 };
 
-const cargarOpcionesCompras = async (): Promise<Record<string, Opcion[]>> => {
+const cargarOpcionesCompras = async () => {
   const proveedores = await listarProveedores({ estado: 'Activo' });
   return {
-    id_proveedor: (proveedores ?? []).map((proveedor) => ({
+    id_proveedor: (proveedores || []).map((proveedor) => ({
       valor: proveedor.id_proveedor,
       etiqueta: proveedor.nombre,
     })),
   };
 };
 
-const transformarCompras = (
-  registros: Compra[],
-  opciones: Record<string, Opcion[]>,
-): Compra[] =>
-  (registros ?? []).map((compra) => ({
+const transformarCompras = (registros, opciones) =>
+  (registros || []).map((compra) => ({
     ...compra,
     proveedorNombre: compra.proveedor?.nombre || textoOpcion(opciones.id_proveedor, compra.id_proveedor),
   }));
 
-const soloBorrador = (compra: Compra): boolean => compra.estado === 'Borrador';
+const soloBorrador = (compra) => compra.estado === 'Borrador';
 
 export function ComprasModulo() {
-  const [detalle, setDetalle] = useState<Compra | null>(null);
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const [detalle, setDetalle] = useState(null);
+  const [productos, setProductos] = useState([]);
   const [nuevoDetalle, setNuevoDetalle] = useState({ id_producto: '', cantidad: '1', costo_unitario: '' });
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [errorDetalle, setErrorDetalle] = useState('');
@@ -647,25 +517,25 @@ export function ComprasModulo() {
   useEffect(() => {
     listarProductos()
       .then((respuesta) => setProductos(Array.isArray(respuesta) ? respuesta : []))
-      .catch((err: unknown) => setErrorDetalle(mensajeError(err)));
+      .catch((err) => setErrorDetalle(err.message));
   }, []);
 
-  const opcionesProductos = useMemo<Opcion[]>(
+  const opcionesProductos = useMemo(
     () =>
       productos.map((producto) => ({
         valor: producto.id_producto,
-        etiqueta: `${producto.nombre} · stock ${producto.stock ?? 0}`,
+        etiqueta: `${producto.nombre} · stock ${producto.stock}`,
       })),
     [productos],
   );
 
-  const recargarDetalle = useCallback(async (id: unknown) => {
+  const recargarDetalle = useCallback(async (id) => {
     const respuesta = await obtenerCompra(id);
     setDetalle(respuesta);
     setRefresco((valor) => valor + 1);
   }, []);
 
-  const acciones = useMemo<Accion<Compra>[]>(
+  const acciones = useMemo(
     () => [
       {
         etiqueta: 'Ver detalle',
@@ -676,7 +546,7 @@ export function ComprasModulo() {
           try {
             setDetalle(await obtenerCompra(compra.id_compra));
           } catch (err) {
-            setErrorDetalle(mensajeError(err));
+            setErrorDetalle(err.message);
             throw err;
           } finally {
             setCargandoDetalle(false);
@@ -691,17 +561,17 @@ export function ComprasModulo() {
         ejecutar: async (compra) => {
           const respuesta = await confirmarCompra(compra.id_compra);
           if (detalle?.id_compra === compra.id_compra) await recargarDetalle(compra.id_compra);
-          return respuesta.message ?? respuesta.mensaje ?? 'Compra confirmada.';
+          return respuesta.message;
         },
       },
     ],
     [detalle, recargarDetalle],
   );
 
-  const cambiarDetalle = (nombre: string, valor: string) =>
+  const cambiarDetalle = (nombre, valor) =>
     setNuevoDetalle((actual) => ({ ...actual, [nombre]: valor }));
 
-  const agregarProducto = async (evento: FormEvent<HTMLFormElement>) => {
+  const agregarProducto = async (evento) => {
     evento.preventDefault();
     if (!detalle) return;
     const cantidad = Number(nuevoDetalle.cantidad);
@@ -723,14 +593,13 @@ export function ComprasModulo() {
       setNuevoDetalle({ id_producto: '', cantidad: '1', costo_unitario: '' });
       setAvisoDetalle('Producto agregado. El backend recalculó los totales de la compra.');
     } catch (err) {
-      setErrorDetalle(mensajeError(err));
+      setErrorDetalle(err.message);
     } finally {
       setCargandoDetalle(false);
     }
   };
 
-  const quitarProducto = async (item: DetalleCompra) => {
-    if (!detalle) return;
+  const quitarProducto = async (item) => {
     if (!window.confirm(`¿Quitar ${item.producto || `el producto ${item.id_producto}`} de esta compra?`)) return;
     setCargandoDetalle(true);
     setErrorDetalle('');
@@ -740,14 +609,13 @@ export function ComprasModulo() {
       await recargarDetalle(detalle.id_compra);
       setAvisoDetalle('Producto eliminado. El backend recalculó los totales de la compra.');
     } catch (err) {
-      setErrorDetalle(mensajeError(err));
+      setErrorDetalle(err.message);
     } finally {
       setCargandoDetalle(false);
     }
   };
 
   const confirmarDetalle = async () => {
-    if (!detalle) return;
     if (!window.confirm('¿Confirmar esta compra? El inventario se actualizará y se enviará un correo al proveedor.')) return;
     setCargandoDetalle(true);
     setErrorDetalle('');
@@ -755,9 +623,9 @@ export function ComprasModulo() {
     try {
       const respuesta = await confirmarCompra(detalle.id_compra);
       await recargarDetalle(detalle.id_compra);
-      setAvisoDetalle(respuesta.message ?? respuesta.mensaje ?? 'Compra confirmada.');
+      setAvisoDetalle(respuesta.message);
     } catch (err) {
-      setErrorDetalle(mensajeError(err));
+      setErrorDetalle(err.message);
     } finally {
       setCargandoDetalle(false);
     }
@@ -821,10 +689,10 @@ export function ComprasModulo() {
                 </tr>
               </thead>
               <tbody>
-                {(detalle.detalles ?? []).length === 0 ? (
+                {(detalle.detalles || []).length === 0 ? (
                   <tr><td colSpan={5} className="fila-vacia">Esta compra aún no tiene productos.</td></tr>
                 ) : (
-                  detalle.detalles?.map((item) => (
+                  detalle.detalles.map((item) => (
                     <tr key={item.id_detalle_compra}>
                       <td>{item.producto || textoOpcion(opcionesProductos, item.id_producto)}</td>
                       <td>{item.cantidad}</td>
@@ -835,7 +703,7 @@ export function ComprasModulo() {
                           type="button"
                           className="boton enlinea peligro"
                           disabled={detalle.estado !== 'Borrador' || cargandoDetalle}
-                          onClick={() => void quitarProducto(item)}
+                          onClick={() => quitarProducto(item)}
                         >
                           Quitar
                         </button>
@@ -878,7 +746,7 @@ export function ComprasModulo() {
                 <button type="submit" className="boton primario" disabled={cargandoDetalle}>
                   {cargandoDetalle ? 'Actualizando…' : 'Agregar producto'}
                 </button>
-                <button type="button" className="boton secundario" onClick={() => void confirmarDetalle()} disabled={cargandoDetalle}>
+                <button type="button" className="boton secundario" onClick={confirmarDetalle} disabled={cargandoDetalle}>
                   Confirmar compra
                 </button>
               </div>

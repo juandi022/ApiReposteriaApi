@@ -13,7 +13,7 @@ import {
   listarProductos,
   listarProveedores,
   obtenerCompra,
-} from './api.js';
+} from '../api.js';
 
 const opcionesDe = (...valores) => valores.map((valor) => ({ valor, etiqueta: valor }));
 

@@ -1,10 +1,17 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import GestionUsuarios from './paginas/GestionUsuarios'
+import { BrowserRouter } from 'react-router-dom'
+import AppRouter from './AppRouter.jsx'
+import { AuthProvider } from './auth/AuthProvider.jsx'
 import './index.css'
+import './estilos.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <GestionUsuarios />
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRouter />
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 )

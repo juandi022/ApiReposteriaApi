@@ -1,19 +1,37 @@
 import type { AsignacionRol, RolApi, UsuarioApi } from '../interfaces/Usuario'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const API_URL = import.meta.env.VITE_API_URL || '/api'
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem('reposteria_token')
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: {
+      Accept: 'application/json',
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
   })
-  const data = await response.json().catch(() => ({}))
+
+  const texto = await response.text()
+  const data = texto ? JSON.parse(texto) : {}
+
   if (!response.ok) {
-    const detail = Array.isArray(data.error) ? data.error.map((e: { msg?: string }) => e.msg).join(', ') : data.error || data.message || 'No se pudo completar la solicitud'
-    throw new Error(detail)
+    const detalle = Array.isArray(data.error)
+      ? data.error.map((item: { msg?: string }) => item.msg).join(', ')
+      : data.error || data.message || 'No se pudo completar la solicitud'
+    throw new Error(detalle)
   }
+
   return data as T
 }
-const json = (method: string, body?: unknown): RequestInit => ({ method, ...(body ? { body: JSON.stringify(body) } : {}) })
+
+const json = (method: string, body?: unknown): RequestInit => ({
+  method,
+  ...(body ? { body: JSON.stringify(body) } : {}),
+})
+
 export const usuarioService = {
   listar: () => request<UsuarioApi[]>('/usuarios'),
   roles: () => request<RolApi[]>('/roles'),

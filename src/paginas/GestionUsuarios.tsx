@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ArrowLeft, Eye, Pencil, Plus, Search, Trash2, Users, ShieldCheck, RefreshCw, X, UserRound } from 'lucide-react'
-import { usuarioService } from '../services/usuarioService'
-import type { AsignacionRol, RolApi, UsuarioApi, UsuarioVista } from '../interfaces/Usuario'
+import { usuarioService } from '../Services/usuarioService'
+import type { AsignacionRol, RolApi, UsuarioVista } from '../interfaces/Usuario'
 import './GestionUsuarios.css'
 
 type Pantalla = 'lista' | 'agregar' | 'mostrar' | 'modificar' | 'eliminar'

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
 
-function Ojo({ visible }) {
+function Ojo({ visible }: { visible: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -18,6 +18,16 @@ function Ojo({ visible }) {
   )
 }
 
+interface CampoPasswordProps {
+  id: string
+  name: string
+  value: string
+  onChange: (evento: ChangeEvent<HTMLInputElement>) => void
+  placeholder?: string
+  autoComplete?: string
+  required?: boolean
+}
+
 export default function CampoPassword({
   id,
   name,
@@ -26,7 +36,7 @@ export default function CampoPassword({
   placeholder,
   autoComplete,
   required = true,
-}) {
+}: CampoPasswordProps) {
   const [visible, setVisible] = useState(false)
 
   return (

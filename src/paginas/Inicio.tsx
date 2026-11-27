@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth/authContext.js'
-import Encabezado from '../componentes/Encabezado.jsx'
+import { useAuth } from '../auth/authContext'
+import Encabezado from '../componentes/Encabezado'
 
 const GRUPOS_MODULOS = [
   {

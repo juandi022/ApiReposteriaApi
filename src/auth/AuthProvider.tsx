@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   cerrarSesion,
   clearToken,
@@ -6,11 +6,11 @@ import {
   iniciarSesion,
   obtenerPerfil,
   setToken,
-} from '../api.js'
-import { AuthContext } from './authContext.js'
+} from '../api'
+import { AuthContext, type AuthContextValue } from './authContext'
 
-export function AuthProvider({ children }) {
-  const [usuario, setUsuario] = useState(null)
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [usuario, setUsuario] = useState<AuthContextValue['usuario']>(null)
   const [verificando, setVerificando] = useState(true)
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
 
     obtenerPerfil()
       .then((data) => {
-        if (activo) setUsuario(data?.usuario || null)
+        if (activo) setUsuario(data?.usuario ?? null)
       })
       .catch(() => {
         clearToken()
@@ -39,14 +39,14 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const login = useCallback(async (identificador, userpswd) => {
+  const login = useCallback<AuthContextValue['login']>(async (identificador, userpswd) => {
     const data = await iniciarSesion(identificador, userpswd)
     if (!data?.token) throw new Error('El servidor no devolvió un token de acceso.')
     setToken(data.token)
-    setUsuario(data.usuario || null)
+    setUsuario(data.usuario ?? null)
   }, [])
 
-  const logout = useCallback(async () => {
+  const logout = useCallback<AuthContextValue['logout']>(async () => {
     try {
       await cerrarSesion()
     } catch {
@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const valor = useMemo(
+  const valor = useMemo<AuthContextValue>(
     () => ({ usuario, verificando, login, logout }),
     [usuario, verificando, login, logout],
   )

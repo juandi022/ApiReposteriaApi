@@ -11,8 +11,6 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "allowJs": true,
-    "checkJs": false,
 
     /* Strictness & Linting */
     "strict": true,
@@ -24,12 +22,12 @@
   "include": [
     "src/main.tsx",
     "src/vite-env.d.ts",
-    "src/api.js",
-    "src/AppRouter.jsx",
+    "src/tipos.ts",
+    "src/api.ts",
+    "src/AppRouter.tsx",
     "src/auth/**/*",
     "src/componentes/**/*",
-    "src/paginas/GestionUsuarios.tsx",
-    "src/paginas/Modulos.jsx",
+    "src/paginas/**/*",
     "src/interfaces/**/*",
     "src/Services/usuarioService.ts"
   ]

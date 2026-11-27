@@ -1,27 +1,39 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { actualizarContrasena } from '../api.js'
-import { useEnvio } from '../auth/useEnvio.js'
-import { contrasenaValida } from '../auth/validaciones.js'
-import CampoPassword from '../componentes/CampoPassword.jsx'
-import Encabezado from '../componentes/Encabezado.jsx'
+import { actualizarContrasena } from '../api'
+import { useEnvio } from '../auth/useEnvio'
+import { contrasenaValida } from '../auth/validaciones'
+import CampoPassword from '../componentes/CampoPassword'
+import Encabezado from '../componentes/Encabezado'
+import type { EstadoRuta } from '../tipos'
 
-const inicial = { pin: '', userpswdNueva: '', confirmar: '' }
+interface FormularioContrasena {
+  pin: string
+  userpswdNueva: string
+  confirmar: string
+}
+
+const inicial: FormularioContrasena = { pin: '', userpswdNueva: '', confirmar: '' }
 
 export default function NuevaContrasena() {
   const navegar = useNavigate()
   const ubicacion = useLocation()
-  const { username, useremail, mensaje } = ubicacion.state || {}
-  const [formulario, setFormulario] = useState(inicial)
+  const estado = ubicacion.state as EstadoRuta | null
+  const username = estado?.username
+  const useremail = estado?.useremail
+  const mensaje = estado?.mensaje
+  const [formulario, setFormulario] = useState<FormularioContrasena>(inicial)
   const { error, cargando, enviar, setError } = useEnvio()
 
-  const cambiar = (campo) => (evento) => {
+  if (!username || !useremail) return <Navigate to="/recuperacion" replace />
+
+  const cambiar = (campo: keyof FormularioContrasena) => (evento: ChangeEvent<HTMLInputElement>) => {
     setError('')
     const valor = campo === 'pin' ? evento.target.value.replace(/\D/g, '').slice(0, 4) : evento.target.value
     setFormulario((actual) => ({ ...actual, [campo]: valor }))
   }
 
-  const hacerCambio = (evento) =>
+  const hacerCambio = (evento: FormEvent<HTMLFormElement>) =>
     enviar(evento, async () => {
       const { pin, userpswdNueva, confirmar } = formulario
       if (!/^\d{4}$/.test(pin)) throw new Error('El PIN debe tener 4 dígitos.')
@@ -35,8 +47,6 @@ export default function NuevaContrasena() {
         state: { mensaje: 'Contraseña actualizada. Ingresa con tu nueva contraseña.' },
       })
     })
-
-  if (!username || !useremail) return <Navigate to="/recuperacion" replace />
 
   return (
     <main className="layout">

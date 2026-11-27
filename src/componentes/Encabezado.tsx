@@ -1,4 +1,9 @@
-export default function Encabezado({ titulo, subtitulo }) {
+interface EncabezadoProps {
+  titulo: string
+  subtitulo: string
+}
+
+export default function Encabezado({ titulo, subtitulo }: EncabezadoProps) {
   return (
     <header className="encabezado">
       <div className="marca" aria-label="Repostería">

@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import {
   actualizarCompra,
   actualizarProveedor,
@@ -13,27 +21,116 @@ import {
   listarProductos,
   listarProveedores,
   obtenerCompra,
-} from '../api.js';
+} from '../api';
+import type { Id, Opcion, Registro } from '../tipos';
 
-const opcionesDe = (...valores) => valores.map((valor) => ({ valor, etiqueta: valor }));
+type DatosFormulario = Record<string, string>;
+type ClaveRegistro = Record<string, Id>;
+type OpcionesPorCampo = Record<string, Opcion[]>;
+
+interface DefinicionCampo {
+  nombre: string;
+  etiqueta: string;
+  tipo?: string;
+  requerido?: boolean;
+  maxLength?: number;
+  min?: number | string;
+  step?: number | string;
+  placeholder?: string;
+  autoComplete?: string;
+  ayuda?: string;
+  opciones?: Opcion[];
+  opcionesKey?: string;
+  valorInicial?: string;
+  auto?: boolean;
+  soloEdicion?: boolean;
+  soloCrear?: boolean;
+}
+
+interface Columna {
+  titulo: string;
+  clave: string | ((registro: Registro) => unknown);
+  formato?: (valor: unknown, registro: Registro) => ReactNode;
+}
+
+interface ServicioCrud {
+  listar: (filtros: Record<string, unknown>) => Promise<unknown> | unknown;
+  crear: (datos: Record<string, unknown>) => Promise<unknown> | unknown;
+  actualizar: (clave: ClaveRegistro, datos: Record<string, unknown>) => Promise<unknown> | unknown;
+  eliminar: (clave: ClaveRegistro) => Promise<unknown> | unknown;
+}
+
+interface AccionCrud {
+  etiqueta: string;
+  visible?: (registro: Registro) => boolean;
+  confirmar?: (registro: Registro) => string;
+  ejecutar?: (registro: Registro) => unknown | Promise<unknown>;
+}
+
+interface CrudModuloProps {
+  titulo: string;
+  descripcion: string;
+  servicio: ServicioCrud;
+  campos: DefinicionCampo[];
+  columnas: Columna[];
+  clave: (registro: Registro) => ClaveRegistro;
+  nombreRegistro?: string;
+  genero?: 'masculino' | 'femenino';
+  inicial?: DatosFormulario;
+  filtros?: DefinicionCampo[];
+  acciones?: AccionCrud[];
+  cargarOpciones?: () => Promise<OpcionesPorCampo> | OpcionesPorCampo;
+  transformar?: (respuesta: unknown, opciones: OpcionesPorCampo) => unknown;
+  puedeEditar?: (registro: Registro) => boolean;
+  puedeEliminar?: (registro: Registro) => boolean;
+  etiquetaRegistro?: (registro: Registro) => string;
+  refresco?: number;
+}
+
+interface DetalleCompra extends Registro {
+  id_compra?: unknown;
+  numero_factura?: unknown;
+  proveedor?: { nombre?: unknown };
+  estado?: unknown;
+  subtotal?: unknown;
+  impuesto?: unknown;
+  total?: unknown;
+  detalles?: unknown;
+}
+
+const mensajeError = (err: unknown): string =>
+  err instanceof Error ? err.message : 'No se pudo completar la solicitud.';
+
+const texto = (valor: unknown, porDefecto = '—'): string =>
+  valor === undefined || valor === null || valor === '' ? porDefecto : String(valor);
+
+const aId = (valor: unknown): Id => {
+  if (typeof valor === 'number') return valor;
+  return valor === undefined || valor === null ? '' : String(valor);
+};
+
+const opcionesDe = (...valores: string[]): Opcion[] =>
+  valores.map((valor) => ({ valor, etiqueta: valor }));
 
 const OPCIONES_ESTADO_PROVEEDOR = opcionesDe('Activo', 'Inactivo');
 const OPCIONES_ESTADO_COMPRA = opcionesDe('Borrador', 'Confirmada', 'Anulada');
 
-const clavePor = (nombre) => (registro) => ({ [nombre]: registro[nombre] });
+const clavePor = (nombre: string) => (registro: Registro): ClaveRegistro => ({
+  [nombre]: aId(registro[nombre]),
+});
 
-const formularioInicial = (campos) =>
+const formularioInicial = (campos: DefinicionCampo[]): DatosFormulario =>
   Object.fromEntries(campos.map((campo) => [campo.nombre, campo.valorInicial ?? '']));
 
-const textoOpcion = (opciones = [], valor) => {
+const textoOpcion = (opciones: Opcion[] = [], valor: unknown): string => {
   if (valor === undefined || valor === null || valor === '') return '—';
   const encontrada = opciones.find((opcion) => String(opcion.valor) === String(valor));
   return encontrada?.etiqueta || String(valor);
 };
 
-const formatearFecha = (valor) => {
+const formatearFecha = (valor: unknown): string => {
   if (!valor) return '—';
-  const fecha = new Date(valor);
+  const fecha = valor instanceof Date ? valor : new Date(String(valor));
   if (Number.isNaN(fecha.getTime())) return String(valor);
   return new Intl.DateTimeFormat('es-HN', {
     year: 'numeric',
@@ -42,10 +139,10 @@ const formatearFecha = (valor) => {
   }).format(fecha);
 };
 
-const normalizarValor = (definicion, valor) => {
+const normalizarValor = (definicion: DefinicionCampo, valor: unknown): string => {
   if (valor === undefined || valor === null) return '';
   if (definicion.tipo === 'datetime-local') {
-    const fecha = new Date(valor);
+    const fecha = valor instanceof Date ? valor : new Date(String(valor));
     if (!Number.isNaN(fecha.getTime())) {
       const local = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000);
       return local.toISOString().slice(0, 16);
@@ -55,18 +152,22 @@ const normalizarValor = (definicion, valor) => {
   return String(valor);
 };
 
-const prepararValor = (definicion, valor) => {
+const prepararValor = (definicion: DefinicionCampo, valor: unknown): unknown => {
   if (valor === undefined || valor === null || valor === '') return undefined;
   if (definicion.tipo === 'number') return Number(valor);
   if (definicion.tipo === 'datetime-local') {
-    const fecha = new Date(valor);
+    const fecha = valor instanceof Date ? valor : new Date(String(valor));
     if (!Number.isNaN(fecha.getTime())) return fecha.toISOString();
   }
   return valor;
 };
 
-const prepararCuerpo = (campos, formulario, { crear }) => {
-  const cuerpo = {};
+const prepararCuerpo = (
+  campos: DefinicionCampo[],
+  formulario: DatosFormulario,
+  { crear }: { crear: boolean },
+): Record<string, unknown> => {
+  const cuerpo: Record<string, unknown> = {};
   campos.forEach((campo) => {
     if (campo.auto || (crear && campo.soloEdicion) || (!crear && campo.soloCrear)) return;
     const valor = prepararValor(campo, formulario[campo.nombre]);
@@ -75,19 +176,36 @@ const prepararCuerpo = (campos, formulario, { crear }) => {
   return cuerpo;
 };
 
-function EtiquetaEstado({ valor }) {
+function EtiquetaEstado({ valor }: { valor: unknown }) {
   if (!valor) return <span className="estado neutro">—</span>;
-  const activo = ['ACT', 'Activo', 'Borrador'].includes(valor);
-  return <span className={`estado ${activo ? 'activo' : 'inactivo'}`}>{valor}</span>;
+  const activo = ['ACT', 'Activo', 'Borrador'].includes(String(valor));
+  return <span className={`estado ${activo ? 'activo' : 'inactivo'}`}>{String(valor)}</span>;
 }
 
-function CampoFormulario({ definicion, valor, onChange, opciones = [], deshabilitado = false, prefijo = 'campo' }) {
+interface CampoFormularioProps {
+  definicion: DefinicionCampo;
+  valor: string;
+  onChange: (nombre: string, valor: string) => void;
+  opciones?: Opcion[];
+  deshabilitado?: boolean;
+  prefijo?: string;
+}
+
+function CampoFormulario({
+  definicion,
+  valor,
+  onChange,
+  opciones = [],
+  deshabilitado = false,
+  prefijo = 'campo',
+}: CampoFormularioProps) {
   const id = `${prefijo}-${definicion.nombre}`;
   const comun = {
     id,
     name: definicion.nombre,
     value: valor,
-    onChange: (evento) => onChange(definicion.nombre, evento.target.value),
+    onChange: (evento: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+      onChange(definicion.nombre, evento.target.value),
     disabled: deshabilitado,
     required: Boolean(definicion.requerido) && !deshabilitado,
     maxLength: definicion.maxLength,
@@ -137,33 +255,35 @@ function CrudModulo({
   puedeEliminar,
   etiquetaRegistro,
   refresco = 0,
-}) {
+}: CrudModuloProps) {
   const valoresFiltroIniciales = useMemo(
     () => Object.fromEntries(filtros.map((filtro) => [filtro.nombre, filtro.valorInicial ?? ''])),
     [filtros],
   );
-  const [filtrosActuales, setFiltrosActuales] = useState(valoresFiltroIniciales);
-  const [registros, setRegistros] = useState([]);
-  const [opciones, setOpciones] = useState({});
-  const [formulario, setFormulario] = useState(inicial ?? formularioInicial(campos));
-  const [editando, setEditando] = useState(null);
+  const [filtrosActuales, setFiltrosActuales] = useState<DatosFormulario>(valoresFiltroIniciales);
+  const [registros, setRegistros] = useState<Registro[]>([]);
+  const [opciones, setOpciones] = useState<OpcionesPorCampo>({});
+  const [formulario, setFormulario] = useState<DatosFormulario>(
+    inicial ?? formularioInicial(campos),
+  );
+  const [editando, setEditando] = useState<ClaveRegistro | null>(null);
   const [cargando, setCargando] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
 
   const cargar = useCallback(
-    async (parametros) => {
+    async (parametros: Record<string, unknown> = {}) => {
       setCargando(true);
       setError('');
       try {
-        const respuesta = await servicio.listar(parametros || {});
-        const opcionesRespuesta = cargarOpciones ? await cargarOpciones() : {};
+        const respuesta = await servicio.listar(parametros);
+        const opcionesRespuesta: OpcionesPorCampo = cargarOpciones ? await cargarOpciones() : {};
         const lista = transformar ? transformar(respuesta, opcionesRespuesta) : respuesta;
-        setRegistros(Array.isArray(lista) ? lista : []);
-        setOpciones(opcionesRespuesta || {});
+        setRegistros(Array.isArray(lista) ? (lista as Registro[]) : []);
+        setOpciones(opcionesRespuesta);
       } catch (err) {
-        setError(err.message);
+        setError(mensajeError(err));
         setRegistros([]);
       } finally {
         setCargando(false);
@@ -173,10 +293,11 @@ function CrudModulo({
   );
 
   useEffect(() => {
-    cargar(filtrosActuales);
+    void cargar(filtrosActuales);
   }, [cargar, filtrosActuales, refresco]);
 
-  const cambiarCampo = (nombre, valor) => setFormulario((actual) => ({ ...actual, [nombre]: valor }));
+  const cambiarCampo = (nombre: string, valor: string) =>
+    setFormulario((actual) => ({ ...actual, [nombre]: valor }));
 
   const nuevo = () => {
     setEditando(null);
@@ -185,7 +306,7 @@ function CrudModulo({
     setAviso('');
   };
 
-  const editar = (registro) => {
+  const editar = (registro: Registro) => {
     setEditando(clave(registro));
     setFormulario(
       Object.fromEntries(
@@ -199,7 +320,7 @@ function CrudModulo({
     setAviso('');
   };
 
-  const guardar = async (evento) => {
+  const guardar = async (evento: FormEvent<HTMLFormElement>) => {
     evento.preventDefault();
     setProcesando(true);
     setError('');
@@ -213,13 +334,13 @@ function CrudModulo({
       setEditando(null);
       await cargar(filtrosActuales);
     } catch (err) {
-      setError(err.message);
+      setError(mensajeError(err));
     } finally {
       setProcesando(false);
     }
   };
 
-  const eliminar = async (registro) => {
+  const eliminar = async (registro: Registro) => {
     const nombre = etiquetaRegistro ? etiquetaRegistro(registro) : nombreRegistro;
     if (!window.confirm(`¿Eliminar ${nombre}? Esta acción no se puede deshacer.`)) return;
     setProcesando(true);
@@ -232,13 +353,13 @@ function CrudModulo({
       setAviso('Registro eliminado correctamente.');
       await cargar(filtrosActuales);
     } catch (err) {
-      setError(err.message);
+      setError(mensajeError(err));
     } finally {
       setProcesando(false);
     }
   };
 
-  const ejecutarAccion = async (accion, registro) => {
+  const ejecutarAccion = async (accion: AccionCrud, registro: Registro) => {
     if (accion.confirmar && !window.confirm(accion.confirmar(registro))) return;
     if (!accion.ejecutar) return;
     setProcesando(true);
@@ -249,14 +370,15 @@ function CrudModulo({
       if (typeof mensaje === 'string') setAviso(mensaje);
       await cargar(filtrosActuales);
     } catch (err) {
-      setError(err.message);
+      setError(mensajeError(err));
     } finally {
       setProcesando(false);
     }
   };
 
-  const valorCelda = (columna, registro) => {
-    const valor = typeof columna.clave === 'function' ? columna.clave(registro) : registro[columna.clave];
+  const valorCelda = (columna: Columna, registro: Registro): ReactNode => {
+    const valor =
+      typeof columna.clave === 'function' ? columna.clave(registro) : registro[columna.clave];
     if (columna.formato) return columna.formato(valor, registro);
     return valor === undefined || valor === null || valor === '' ? '—' : String(valor);
   };
@@ -284,7 +406,11 @@ function CrudModulo({
               prefijo={`filtro-${filtro.nombre}`}
               definicion={{ ...filtro, requerido: false }}
               valor={filtrosActuales[filtro.nombre] ?? ''}
-              opciones={opciones[filtro.opcionesKey] ?? filtro.opciones ?? []}
+              opciones={
+                (filtro.opcionesKey ? opciones[filtro.opcionesKey] : undefined) ??
+                filtro.opciones ??
+                []
+              }
               onChange={(nombre, valor) =>
                 setFiltrosActuales((actual) => ({ ...actual, [nombre]: valor }))
               }
@@ -317,7 +443,7 @@ function CrudModulo({
               <tr><td colSpan={columnas.length + 1} className="fila-vacia">No hay registros para mostrar.</td></tr>
             ) : (
               registros.map((registro, indice) => (
-                <tr key={clave(registro) && Object.values(clave(registro)).join('-') || indice}>
+                <tr key={Object.values(clave(registro)).join('-') || indice}>
                   {columnas.map((columna) => (
                     <td key={columna.titulo}>{valorCelda(columna, registro)}</td>
                   ))}
@@ -330,7 +456,7 @@ function CrudModulo({
                           type="button"
                           className="boton enlinea"
                           disabled={procesando}
-                          onClick={() => ejecutarAccion(accion, registro)}
+                          onClick={() => void ejecutarAccion(accion, registro)}
                         >
                           {accion.etiqueta}
                         </button>
@@ -350,7 +476,7 @@ function CrudModulo({
                         type="button"
                         className="boton enlinea peligro"
                         disabled={procesando}
-                        onClick={() => eliminar(registro)}
+                        onClick={() => void eliminar(registro)}
                       >
                         Eliminar
                       </button>
@@ -377,7 +503,11 @@ function CrudModulo({
                 key={campo.nombre}
                 definicion={campo}
                 valor={formulario[campo.nombre] ?? ''}
-                opciones={opciones[campo.opcionesKey] ?? campo.opciones ?? []}
+                opciones={
+                  (campo.opcionesKey ? opciones[campo.opcionesKey] : undefined) ??
+                  campo.opciones ??
+                  []
+                }
                 onChange={cambiarCampo}
               />
             ))}
@@ -399,7 +529,7 @@ function CrudModulo({
 
 /* RED DE SUMINISTRO */
 
-const CAMPOS_PROVEEDORES = [
+const CAMPOS_PROVEEDORES: DefinicionCampo[] = [
   { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'text', requerido: true, maxLength: 120 },
   { nombre: 'contacto', etiqueta: 'Contacto', tipo: 'text', maxLength: 120 },
   { nombre: 'telefono', etiqueta: 'Teléfono', tipo: 'text', maxLength: 20 },
@@ -408,11 +538,11 @@ const CAMPOS_PROVEEDORES = [
   { nombre: 'estado', etiqueta: 'Estado', tipo: 'select', opciones: OPCIONES_ESTADO_PROVEEDOR, valorInicial: 'Activo' },
 ];
 
-const FILTROS_PROVEEDORES = [
+const FILTROS_PROVEEDORES: DefinicionCampo[] = [
   { nombre: 'estado', etiqueta: 'Estado', tipo: 'select', opciones: OPCIONES_ESTADO_PROVEEDOR },
 ];
 
-const COLUMNAS_PROVEEDORES = [
+const COLUMNAS_PROVEEDORES: Columna[] = [
   { titulo: 'ID', clave: 'id_proveedor' },
   { titulo: 'Nombre', clave: 'nombre' },
   { titulo: 'Contacto', clave: 'contacto' },
@@ -422,7 +552,7 @@ const COLUMNAS_PROVEEDORES = [
   { titulo: 'Estado', clave: 'estado', formato: (valor) => <EtiquetaEstado valor={valor} /> },
 ];
 
-const SERVICIO_PROVEEDORES = {
+const SERVICIO_PROVEEDORES: ServicioCrud = {
   listar: listarProveedores,
   crear: crearProveedor,
   actualizar: (clave, datos) => actualizarProveedor(clave.id, datos),
@@ -441,14 +571,14 @@ export function ProveedoresModulo() {
       nombreRegistro="proveedor"
       inicial={formularioInicial(CAMPOS_PROVEEDORES)}
       filtros={FILTROS_PROVEEDORES}
-      etiquetaRegistro={(registro) => `el proveedor ${registro.nombre}`}
+      etiquetaRegistro={(registro) => `el proveedor ${texto(registro.nombre)}`}
     />
   );
 }
 
 /* ABASTECIMIENTO */
 
-const CAMPOS_COMPRAS = [
+const CAMPOS_COMPRAS: DefinicionCampo[] = [
   {
     nombre: 'id_proveedor',
     etiqueta: 'Proveedor',
@@ -466,12 +596,12 @@ const CAMPOS_COMPRAS = [
   },
 ];
 
-const FILTROS_COMPRAS = [
+const FILTROS_COMPRAS: DefinicionCampo[] = [
   { nombre: 'estado', etiqueta: 'Estado', tipo: 'select', opciones: OPCIONES_ESTADO_COMPRA },
   { nombre: 'id_proveedor', etiqueta: 'Proveedor', tipo: 'select', opcionesKey: 'id_proveedor' },
 ];
 
-const COLUMNAS_COMPRAS = [
+const COLUMNAS_COMPRAS: Columna[] = [
   { titulo: 'ID', clave: 'id_compra' },
   { titulo: 'Proveedor', clave: 'proveedorNombre' },
   { titulo: 'Factura', clave: 'numero_factura' },
@@ -480,35 +610,45 @@ const COLUMNAS_COMPRAS = [
   { titulo: 'Estado', clave: 'estado', formato: (valor) => <EtiquetaEstado valor={valor} /> },
 ];
 
-const SERVICIO_COMPRAS = {
+const SERVICIO_COMPRAS: ServicioCrud = {
   listar: listarCompras,
   crear: crearCompra,
   actualizar: (clave, datos) => actualizarCompra(clave.id, datos),
   eliminar: (clave) => eliminarCompra(clave.id),
 };
 
-const cargarOpcionesCompras = async () => {
+const cargarOpcionesCompras = async (): Promise<OpcionesPorCampo> => {
   const proveedores = await listarProveedores({ estado: 'Activo' });
+  const lista = Array.isArray(proveedores) ? (proveedores as Registro[]) : [];
   return {
-    id_proveedor: (proveedores || []).map((proveedor) => ({
-      valor: proveedor.id_proveedor,
-      etiqueta: proveedor.nombre,
+    id_proveedor: lista.map((proveedor) => ({
+      valor: aId(proveedor.id_proveedor),
+      etiqueta: texto(proveedor.nombre),
     })),
   };
 };
 
-const transformarCompras = (registros, opciones) =>
-  (registros || []).map((compra) => ({
+const transformarCompras = (respuesta: unknown, opciones: OpcionesPorCampo): Registro[] => {
+  const lista = Array.isArray(respuesta) ? (respuesta as Registro[]) : [];
+  return lista.map((compra) => ({
     ...compra,
-    proveedorNombre: compra.proveedor?.nombre || textoOpcion(opciones.id_proveedor, compra.id_proveedor),
+    proveedorNombre: texto(
+      (compra.proveedor as { nombre?: unknown } | undefined)?.nombre,
+      textoOpcion(opciones.id_proveedor, compra.id_proveedor),
+    ),
   }));
+};
 
-const soloBorrador = (compra) => compra.estado === 'Borrador';
+const soloBorrador = (compra: Registro): boolean => compra.estado === 'Borrador';
 
 export function ComprasModulo() {
-  const [detalle, setDetalle] = useState(null);
-  const [productos, setProductos] = useState([]);
-  const [nuevoDetalle, setNuevoDetalle] = useState({ id_producto: '', cantidad: '1', costo_unitario: '' });
+  const [detalle, setDetalle] = useState<DetalleCompra | null>(null);
+  const [productos, setProductos] = useState<Registro[]>([]);
+  const [nuevoDetalle, setNuevoDetalle] = useState<DatosFormulario>({
+    id_producto: '',
+    cantidad: '1',
+    costo_unitario: '',
+  });
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [errorDetalle, setErrorDetalle] = useState('');
   const [avisoDetalle, setAvisoDetalle] = useState('');
@@ -516,26 +656,26 @@ export function ComprasModulo() {
 
   useEffect(() => {
     listarProductos()
-      .then((respuesta) => setProductos(Array.isArray(respuesta) ? respuesta : []))
-      .catch((err) => setErrorDetalle(err.message));
+      .then((respuesta) => setProductos(Array.isArray(respuesta) ? (respuesta as Registro[]) : []))
+      .catch((err: unknown) => setErrorDetalle(mensajeError(err)));
   }, []);
 
-  const opcionesProductos = useMemo(
+  const opcionesProductos = useMemo<Opcion[]>(
     () =>
       productos.map((producto) => ({
-        valor: producto.id_producto,
-        etiqueta: `${producto.nombre} · stock ${producto.stock}`,
+        valor: aId(producto.id_producto),
+        etiqueta: `${texto(producto.nombre)} · stock ${texto(producto.stock)}`,
       })),
     [productos],
   );
 
-  const recargarDetalle = useCallback(async (id) => {
+  const recargarDetalle = useCallback(async (id: Id) => {
     const respuesta = await obtenerCompra(id);
-    setDetalle(respuesta);
+    setDetalle((respuesta ?? null) as DetalleCompra | null);
     setRefresco((valor) => valor + 1);
   }, []);
 
-  const acciones = useMemo(
+  const acciones = useMemo<AccionCrud[]>(
     () => [
       {
         etiqueta: 'Ver detalle',
@@ -544,9 +684,9 @@ export function ComprasModulo() {
           setErrorDetalle('');
           setAvisoDetalle('');
           try {
-            setDetalle(await obtenerCompra(compra.id_compra));
+            setDetalle((await obtenerCompra(aId(compra.id_compra))) as DetalleCompra | null);
           } catch (err) {
-            setErrorDetalle(err.message);
+            setErrorDetalle(mensajeError(err));
             throw err;
           } finally {
             setCargandoDetalle(false);
@@ -557,23 +697,25 @@ export function ComprasModulo() {
         etiqueta: 'Confirmar',
         visible: soloBorrador,
         confirmar: (compra) =>
-          `¿Confirmar la compra ${compra.numero_factura}? Se actualizará el inventario y se enviará un correo al proveedor.`,
+          `¿Confirmar la compra ${texto(compra.numero_factura)}? Se actualizará el inventario y se enviará un correo al proveedor.`,
         ejecutar: async (compra) => {
-          const respuesta = await confirmarCompra(compra.id_compra);
-          if (detalle?.id_compra === compra.id_compra) await recargarDetalle(compra.id_compra);
-          return respuesta.message;
+          const idCompra = aId(compra.id_compra);
+          const respuesta = await confirmarCompra(idCompra);
+          if (detalle && aId(detalle.id_compra) === idCompra) await recargarDetalle(idCompra);
+          return respuesta?.message ?? 'Compra confirmada correctamente.';
         },
       },
     ],
     [detalle, recargarDetalle],
   );
 
-  const cambiarDetalle = (nombre, valor) =>
+  const cambiarDetalle = (nombre: string, valor: string) =>
     setNuevoDetalle((actual) => ({ ...actual, [nombre]: valor }));
 
-  const agregarProducto = async (evento) => {
+  const agregarProducto = async (evento: FormEvent<HTMLFormElement>) => {
     evento.preventDefault();
     if (!detalle) return;
+    const idCompra = aId(detalle.id_compra);
     const cantidad = Number(nuevoDetalle.cantidad);
     const costo = Number(nuevoDetalle.costo_unitario);
     if (!nuevoDetalle.id_producto || !Number.isInteger(cantidad) || cantidad < 1 || !(costo > 0)) {
@@ -584,48 +726,50 @@ export function ComprasModulo() {
     setErrorDetalle('');
     setAvisoDetalle('');
     try {
-      await agregarDetalleCompra(detalle.id_compra, {
+      await agregarDetalleCompra(idCompra, {
         id_producto: Number(nuevoDetalle.id_producto),
         cantidad,
         costo_unitario: costo,
       });
-      await recargarDetalle(detalle.id_compra);
+      await recargarDetalle(idCompra);
       setNuevoDetalle({ id_producto: '', cantidad: '1', costo_unitario: '' });
       setAvisoDetalle('Producto agregado. El backend recalculó los totales de la compra.');
     } catch (err) {
-      setErrorDetalle(err.message);
+      setErrorDetalle(mensajeError(err));
     } finally {
       setCargandoDetalle(false);
     }
   };
 
-  const quitarProducto = async (item) => {
-    if (!window.confirm(`¿Quitar ${item.producto || `el producto ${item.id_producto}`} de esta compra?`)) return;
+  const quitarProducto = async (item: Registro) => {
+    if (!detalle) return;
+    if (!window.confirm(`¿Quitar ${texto(item.producto, `el producto ${texto(item.id_producto)}`)} de esta compra?`)) return;
     setCargandoDetalle(true);
     setErrorDetalle('');
     setAvisoDetalle('');
     try {
-      await eliminarDetalleCompra(detalle.id_compra, item.id_detalle_compra);
-      await recargarDetalle(detalle.id_compra);
+      await eliminarDetalleCompra(aId(detalle.id_compra), aId(item.id_detalle_compra));
+      await recargarDetalle(aId(detalle.id_compra));
       setAvisoDetalle('Producto eliminado. El backend recalculó los totales de la compra.');
     } catch (err) {
-      setErrorDetalle(err.message);
+      setErrorDetalle(mensajeError(err));
     } finally {
       setCargandoDetalle(false);
     }
   };
 
   const confirmarDetalle = async () => {
+    if (!detalle) return;
     if (!window.confirm('¿Confirmar esta compra? El inventario se actualizará y se enviará un correo al proveedor.')) return;
     setCargandoDetalle(true);
     setErrorDetalle('');
     setAvisoDetalle('');
     try {
-      const respuesta = await confirmarCompra(detalle.id_compra);
-      await recargarDetalle(detalle.id_compra);
-      setAvisoDetalle(respuesta.message);
+      const respuesta = await confirmarCompra(aId(detalle.id_compra));
+      await recargarDetalle(aId(detalle.id_compra));
+      setAvisoDetalle(texto(respuesta?.message, 'Compra confirmada correctamente.'));
     } catch (err) {
-      setErrorDetalle(err.message);
+      setErrorDetalle(mensajeError(err));
     } finally {
       setCargandoDetalle(false);
     }
@@ -649,7 +793,7 @@ export function ComprasModulo() {
         puedeEditar={soloBorrador}
         puedeEliminar={soloBorrador}
         acciones={acciones}
-        etiquetaRegistro={(registro) => `la compra ${registro.numero_factura}`}
+        etiquetaRegistro={(registro) => `la compra ${texto(registro.numero_factura)}`}
         refresco={refresco}
       />
 
@@ -657,10 +801,10 @@ export function ComprasModulo() {
         <article className="tarjeta modulo-tarjeta detalle-compra">
           <header className="modulo-cabecera">
             <div>
-              <h3>Detalle de la compra #{detalle.id_compra}</h3>
+              <h3>Detalle de la compra #{texto(detalle.id_compra)}</h3>
               <p>
-                {detalle.numero_factura} · {detalle.proveedor?.nombre || 'Proveedor no disponible'} ·{' '}
-                {detalle.estado}
+                {texto(detalle.numero_factura)} · {texto(detalle.proveedor?.nombre, 'Proveedor no disponible')} ·{' '}
+                {texto(detalle.estado)}
               </p>
             </div>
             <button type="button" className="boton secundario" onClick={() => setDetalle(null)}>
@@ -672,9 +816,9 @@ export function ComprasModulo() {
           {errorDetalle && <p className="error">{errorDetalle}</p>}
 
           <div className="totales-compra">
-            <div><span>Subtotal</span><strong>{detalle.subtotal ?? '0.00'}</strong></div>
-            <div><span>Impuesto</span><strong>{detalle.impuesto ?? '0.00'}</strong></div>
-            <div><span>Total</span><strong>{detalle.total ?? '0.00'}</strong></div>
+            <div><span>Subtotal</span><strong>{texto(detalle.subtotal, '0.00')}</strong></div>
+            <div><span>Impuesto</span><strong>{texto(detalle.impuesto, '0.00')}</strong></div>
+            <div><span>Total</span><strong>{texto(detalle.total, '0.00')}</strong></div>
           </div>
 
           <div className="tabla-wrap">
@@ -689,21 +833,21 @@ export function ComprasModulo() {
                 </tr>
               </thead>
               <tbody>
-                {(detalle.detalles || []).length === 0 ? (
+                {(Array.isArray(detalle.detalles) ? (detalle.detalles as Registro[]) : []).length === 0 ? (
                   <tr><td colSpan={5} className="fila-vacia">Esta compra aún no tiene productos.</td></tr>
                 ) : (
-                  detalle.detalles.map((item) => (
-                    <tr key={item.id_detalle_compra}>
-                      <td>{item.producto || textoOpcion(opcionesProductos, item.id_producto)}</td>
-                      <td>{item.cantidad}</td>
-                      <td>{item.costo_unitario}</td>
-                      <td>{item.subtotal}</td>
+                  (detalle.detalles as Registro[]).map((item) => (
+                    <tr key={texto(item.id_detalle_compra)}>
+                      <td>{texto(item.producto || textoOpcion(opcionesProductos, item.id_producto))}</td>
+                      <td>{texto(item.cantidad)}</td>
+                      <td>{texto(item.costo_unitario)}</td>
+                      <td>{texto(item.subtotal)}</td>
                       <td className="acciones-tabla">
                         <button
                           type="button"
                           className="boton enlinea peligro"
-                          disabled={detalle.estado !== 'Borrador' || cargandoDetalle}
-                          onClick={() => quitarProducto(item)}
+                          disabled={texto(detalle.estado) !== 'Borrador' || cargandoDetalle}
+                          onClick={() => void quitarProducto(item)}
                         >
                           Quitar
                         </button>
@@ -746,7 +890,7 @@ export function ComprasModulo() {
                 <button type="submit" className="boton primario" disabled={cargandoDetalle}>
                   {cargandoDetalle ? 'Actualizando…' : 'Agregar producto'}
                 </button>
-                <button type="button" className="boton secundario" onClick={confirmarDetalle} disabled={cargandoDetalle}>
+                <button type="button" className="boton secundario" onClick={() => void confirmarDetalle()} disabled={cargandoDetalle}>
                   Confirmar compra
                 </button>
               </div>

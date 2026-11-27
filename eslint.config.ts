@@ -7,14 +7,17 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 const archivosFrontend = [
   'src/main.tsx',
-  'src/api.js',
-  'src/AppRouter.jsx',
-  'src/auth/**/*.{js,jsx}',
-  'src/componentes/**/*.jsx',
-  'src/paginas/*.{js,jsx,tsx}',
+  'src/api.ts',
+  'src/tipos.ts',
+  'src/AppRouter.tsx',
+  'src/auth/**/*.{ts,tsx}',
+  'src/componentes/**/*.tsx',
+  'src/paginas/**/*.tsx',
   'src/interfaces/**/*.ts',
   'src/Services/**/*.ts',
   'vite.config.ts',
+  'eslint.config.ts',
+  'tailwind.config.ts',
 ]
 
 export default defineConfig([
@@ -32,26 +35,6 @@ export default defineConfig([
       parserOptions: {
         ecmaFeatures: { jsx: true },
       },
-    },
-  },
-  {
-    files: ['src/**/*.{js,jsx}', 'eslint.config.js'],
-    extends: [
-      js.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
-    ],
-    languageOptions: {
-      globals: globals.browser,
-      parserOptions: {
-        ecmaFeatures: { jsx: true },
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-      },
-    },
-    rules: {
-      // Sin eslint-plugin-react, el compilador ya marca los identificadores usados en JSX.
-      'no-unused-vars': 'off',
     },
   },
 ])

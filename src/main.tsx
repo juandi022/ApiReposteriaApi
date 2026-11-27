@@ -1,8 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import AppRouter from './AppRouter.jsx'
-import { AuthProvider } from './auth/AuthProvider.jsx'
+import AppRouter from './AppRouter'
+import { AuthProvider } from './auth/AuthProvider'
 import './index.css'
 import './estilos.css'
 

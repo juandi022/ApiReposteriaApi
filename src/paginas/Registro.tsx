@@ -1,24 +1,31 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { registro } from '../api.js'
-import { useEnvio } from '../auth/useEnvio.js'
-import { contrasenaValida, esCorreo } from '../auth/validaciones.js'
-import CampoPassword from '../componentes/CampoPassword.jsx'
-import Encabezado from '../componentes/Encabezado.jsx'
+import { registro } from '../api'
+import { useEnvio } from '../auth/useEnvio'
+import { contrasenaValida, esCorreo } from '../auth/validaciones'
+import CampoPassword from '../componentes/CampoPassword'
+import Encabezado from '../componentes/Encabezado'
 
-const inicial = { useremail: '', username: '', userpswd: '', confirmar: '' }
+interface FormularioRegistro {
+  useremail: string
+  username: string
+  userpswd: string
+  confirmar: string
+}
+
+const inicial: FormularioRegistro = { useremail: '', username: '', userpswd: '', confirmar: '' }
 
 export default function Registro() {
   const navegar = useNavigate()
-  const [formulario, setFormulario] = useState(inicial)
+  const [formulario, setFormulario] = useState<FormularioRegistro>(inicial)
   const { error, cargando, enviar, setError } = useEnvio()
 
-  const cambiar = (campo) => (evento) => {
+  const cambiar = (campo: keyof FormularioRegistro) => (evento: ChangeEvent<HTMLInputElement>) => {
     setError('')
     setFormulario((actual) => ({ ...actual, [campo]: evento.target.value }))
   }
 
-  const hacerRegistro = (evento) =>
+  const hacerRegistro = (evento: FormEvent<HTMLFormElement>) =>
     enviar(evento, async () => {
       const { useremail, username, userpswd, confirmar } = formulario
       if (!esCorreo(useremail.trim())) throw new Error('Ingresa un correo electrónico válido.')

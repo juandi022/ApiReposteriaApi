@@ -1,19 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth/authContext.js'
-import { useEnvio } from '../auth/useEnvio.js'
-import CampoPassword from '../componentes/CampoPassword.jsx'
-import Encabezado from '../componentes/Encabezado.jsx'
+import { useAuth } from '../auth/authContext'
+import { useEnvio } from '../auth/useEnvio'
+import CampoPassword from '../componentes/CampoPassword'
+import Encabezado from '../componentes/Encabezado'
+import type { EstadoRuta } from '../tipos'
+
+interface FormularioLogin {
+  identificador: string
+  userpswd: string
+}
 
 export default function Login() {
   const { login } = useAuth()
   const navegar = useNavigate()
   const ubicacion = useLocation()
-  const [formulario, setFormulario] = useState({ identificador: '', userpswd: '' })
+  const [formulario, setFormulario] = useState<FormularioLogin>({ identificador: '', userpswd: '' })
   const { error, cargando, enviar, setError } = useEnvio()
 
-  const [aviso, setAviso] = useState(ubicacion.state?.mensaje || '')
-  const destino = ubicacion.state?.from?.pathname || '/inicio'
+  const estado = ubicacion.state as EstadoRuta | null
+  const [aviso, setAviso] = useState(estado?.mensaje || '')
+  const destino = estado?.from?.pathname || '/inicio'
 
   useEffect(() => {
     const guardado = sessionStorage.getItem('reposteria_aviso')
@@ -22,12 +29,12 @@ export default function Login() {
     sessionStorage.removeItem('reposteria_aviso')
   }, [])
 
-  const cambiar = (campo) => (evento) => {
+  const cambiar = (campo: keyof FormularioLogin) => (evento: ChangeEvent<HTMLInputElement>) => {
     setError('')
     setFormulario((actual) => ({ ...actual, [campo]: evento.target.value }))
   }
 
-  const hacerLogin = (evento) =>
+  const hacerLogin = (evento: FormEvent<HTMLFormElement>) =>
     enviar(evento, async () => {
       const { identificador, userpswd } = formulario
       if (!identificador.trim() || !userpswd) throw new Error('Ingresa tu usuario y contraseña.')

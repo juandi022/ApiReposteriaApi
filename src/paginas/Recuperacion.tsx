@@ -1,21 +1,26 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { enviarPin } from '../api.js'
-import { useEnvio } from '../auth/useEnvio.js'
-import { esCorreo } from '../auth/validaciones.js'
-import Encabezado from '../componentes/Encabezado.jsx'
+import { enviarPin } from '../api'
+import { useEnvio } from '../auth/useEnvio'
+import { esCorreo } from '../auth/validaciones'
+import Encabezado from '../componentes/Encabezado'
+
+interface FormularioRecuperacion {
+  username: string
+  useremail: string
+}
 
 export default function Recuperacion() {
   const navegar = useNavigate()
-  const [formulario, setFormulario] = useState({ username: '', useremail: '' })
+  const [formulario, setFormulario] = useState<FormularioRecuperacion>({ username: '', useremail: '' })
   const { error, cargando, enviar, setError } = useEnvio()
 
-  const cambiar = (campo) => (evento) => {
+  const cambiar = (campo: keyof FormularioRecuperacion) => (evento: ChangeEvent<HTMLInputElement>) => {
     setError('')
     setFormulario((actual) => ({ ...actual, [campo]: evento.target.value }))
   }
 
-  const hacerRecuperacion = (evento) =>
+  const hacerRecuperacion = (evento: FormEvent<HTMLFormElement>) =>
     enviar(evento, async () => {
       const { username, useremail } = formulario
       if (username.trim().length < 3) throw new Error('El usuario debe tener al menos 3 caracteres.')

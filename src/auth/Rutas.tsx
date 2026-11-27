@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from './authContext.js'
+import { useAuth } from './authContext'
 
 function Cargando() {
   return (
@@ -21,8 +21,9 @@ export function RutaPrivada() {
 export function RutaPublica() {
   const { usuario, verificando } = useAuth()
   const ubicacion = useLocation()
+  const estado = ubicacion.state as { from?: { pathname?: string } } | null
 
   if (verificando) return <Cargando />
-  if (usuario) return <Navigate to={ubicacion.state?.from?.pathname || '/inicio'} replace />
+  if (usuario) return <Navigate to={estado?.from?.pathname || '/inicio'} replace />
   return <Outlet />
 }

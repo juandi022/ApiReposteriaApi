@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import Encabezado from '../componentes/Encabezado.jsx'
+import Encabezado from '../componentes/Encabezado'
 
 export default function NoEncontrado() {
   return (
